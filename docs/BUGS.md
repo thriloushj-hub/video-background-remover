@@ -48,8 +48,18 @@ same folder.
 * But "we have a frame-dropping bug" is the wrong headline. The likely fix is
   to re-export the matte from the full clip, or to store the exact source cut
   alongside every output.
-* Confirming this properly needs the v1 Colab notebook, which has not been
-  read. If it turns out the notebook trims its input, that closes the case.
+* Confirming this properly needs the v1 Colab notebook. **Checked: it is not
+  in this repo.** `notebooks/vbgr2_colab.ipynb` is the *v2* runner — it
+  imports `vbgr.pipeline.Pipeline`, sets `cfg.motion.enabled`, runs the
+  ablation grid — none of which existed when `output vids/` was produced. The
+  original YOLO → SAM 3 → MatAnyone 2 notebook referenced in the handoff doc
+  (README's "Successor to the YOLO → SAM 3 → MatAnyone 2 notebook") was never
+  checked into this repo, only its output was. So the "wrong source cut"
+  theory is still just the best-supported hypothesis from the NCC evidence
+  above, not a confirmed root cause, and closing this properly means getting
+  hold of that original notebook (or the person who ran it) rather than
+  anything in this checkout. Don't spend more analysis time on this from
+  inside the repo — the next step is external.
 
 *Guard in v2 regardless:* `shots.shot_ranges` asserts that shot ranges tile
 `[0, n)` exactly, `VideoWriter.close(expect=n)` raises `FrameCountMismatch`
