@@ -1,0 +1,311 @@
+"""Configuration for the vbgr2 video background removal pipeline.
+
+Everything is a plain dataclass so it can be constructed in code, loaded from
+YAML, or overridden from the CLI.  Defaults are the ones we believe are correct
+for 1080p 24fps footage; see configs/ for per-scenario overrides.
+"""
+from __future__ import annotations
+
+import dataclasses
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Literal, Optional
+
+
+# --------------------------------------------------------------------------- #
+# Sub-configs
+# --------------------------------------------------------------------------- #
+
+@dataclass
+class IOConfig:
+    input_dir: str = "inputs"
+    output_dir: str = "results"
+    # "green" | "alpha" | "transparent" (webm/vp9) | "all"
+    output_mode: Literal["green", "alpha", "transparent", "all"] = "all"
+    green: tuple = (0, 177, 64)
+    # Downscale so that min(w, h) <= max_size before matting. None = native.
+    # Matting quality degrades badly below ~720 on the short side.
+    max_size: Optional[int] = None
+    # Encode CRF for the RGB outputs. Alpha is always written losslessly-ish.
+    crf: int = 16
+    # Write per-frame PNGs alongside the videos.
+    save_frames: bool = False
+    # Fail loudly rather than silently dropping frames (see docs/BUGS.md).
+    strict_frame_count: bool = True
+
+
+@dataclass
+class ShotConfig:
+    """Shot splitting.  MatAnyone-style memory must not cross a cut."""
+    enabled: bool = True
+    # Bhattacharyya distance between consecutive HSV histograms.
+    cut_threshold: float = 0.35
+    hist_bins: int = 64
+    # A "cut" that is only 1-2 frames long is a flash/strobe, not a cut.
+    min_shot_len: int = 12
+    # Guard against a hard cut being missed: also cut when mean abs frame
+    # difference spikes far above the running median.
+    use_absdiff_guard: bool = True
+    absdiff_sigma: float = 6.0
+
+
+@dataclass
+class DetectConfig:
+    """YOLO person detection used to seed and to scan for entrants."""
+    model: str = "yolov8x.pt"
+    conf: float = 0.25
+    iou: float = 0.5
+    # A person box shorter than this fraction of the tallest kept subject is
+    # treated as a background bystander.  Height, not area: height survives
+    # horizontal cropping when someone enters from the frame edge.
+    person_rel_size_min: float = 0.60
+    # Prominence = conf * centrality * area, used only for ranking + a floor.
+    box_score_ratio: float = 0.15
+    # CLAHE is deliberately NOT used: it pushes frames out of YOLO's training
+    # distribution and measurably hurt recall on bright/saturated footage.
+    device: str = "auto"
+
+
+@dataclass
+class SeedConfig:
+    """SAM 3 seeding of the first frame of each shot."""
+    mask_threshold: float = 0.0
+    detect_threshold: float = 0.35
+    concept_text: str = "person"
+    concept_text_detect: bool = True
+    concept_match_iou: float = 0.4
+    # The interactive box->mask head always fires and recovers missed limbs and
+    # held objects; its extra regions are then gated by appearance.
+    force_interactive: bool = True
+    interactive_mask_threshold: float = 0.0
+    box_clip_margin: int = 8
+    gate_background_regions: bool = True
+    gate_bg_margin: float = 0.10
+    # Hole handling
+    fill_mask_holes: bool = True
+    gap_fill: bool = True
+    gap_bg_margin: float = 0.12
+    gap_min_area: int = 64
+    gap_max_frac: float = 0.05
+
+
+@dataclass
+class MattingConfig:
+    """Which matting engine, and how its memory is driven."""
+    # "matanyone2" | "sam2matting" | "rvm" | "passthrough"
+    engine: str = "sam2matting"
+    checkpoint: Optional[str] = None
+    device: str = "auto"
+    # fp16 halves memory and is visually lossless for alpha.
+    half: bool = True
+
+    n_warmup_static: int = 10
+    n_warmup_motion: int = 10
+    r_erode: int = 0
+    r_dilate: int = 6
+    # Write the clean motion-warmup frames into PERMANENT memory, not just
+    # working memory.  Without this, a low-texture region (light shirt, waist)
+    # slowly keys out over a long shot because recent frames outvote the single
+    # first-frame anchor.
+    drift_anchor_warmup: bool = True
+    # Cap on permanent anchors so memory does not grow without bound.
+    max_permanent_anchors: int = 24
+    # Raise instead of warning when a declared engine capability turns out not
+    # to exist on the installed API. Leave False for exploratory runs; set True
+    # in CI and before any long batch or ablation, because a silently inactive
+    # memory gate still emits counters and still produces numbers, and every
+    # one of those numbers is meaningless.
+    strict_capabilities: bool = False
+
+
+@dataclass
+class MemoryGateConfig:
+    """Stop bad frames from poisoning the propagator's memory.
+
+    The single biggest cause of progressive drift is that trackers happily
+    write low-quality predictions into memory during occlusion, then propagate
+    them forever.  We score every frame before it is committed.
+    """
+    enabled: bool = True
+    # Reject if mask area changes by more than this factor vs the running median.
+    max_area_ratio: float = 1.6
+    min_area_ratio: float = 0.55
+    # Reject if IoU against the flow-warped previous alpha is too low: that
+    # means the tracker jumped, which during smooth motion is always an error.
+    min_flow_iou: float = 0.55
+    # Reject frames whose alpha is suspiciously binary AND tiny (typical of a
+    # collapsed / lost track).
+    min_area_frac: float = 0.0008
+    # How many consecutive rejects before we declare the track lost and hand
+    # off to the re-prompting layer.
+    lost_after: int = 8
+
+
+@dataclass
+class MotionConfig:
+    """Fast-motion / motion-blur handling.
+
+    A binary mask cannot represent a blurred limb: those pixels are genuinely
+    semi-transparent.  And a memory propagator cannot *discover* a limb that
+    was never in the seed.  So we do two things:
+      1. widen the trimap unknown band in proportion to local flow magnitude,
+         which gives the matting head room to find the blurred edge;
+      2. warp the previous alpha forward by optical flow and use it as a prior,
+         so a fast limb keeps a plausible alpha instead of vanishing.
+    """
+    enabled: bool = True
+    # "dis" is ~10x faster than farneback at similar quality.
+    flow_method: Literal["dis", "farneback"] = "dis"
+    # Flow is computed at this short-side resolution and upsampled. 480 is
+    # plenty for a band-width signal and keeps this off the critical path.
+    flow_scale_short_side: int = 480
+
+    # Trimap band width in px: w = clip(base + k * flow_mag, base, w_max)
+    trimap_base: float = 4.0
+    trimap_flow_gain: float = 0.9
+    trimap_max: float = 40.0
+    # Blur the flow magnitude map so the band width varies smoothly.
+    flow_smooth_sigma: float = 9.0
+
+    # Frames whose 95th-percentile flow magnitude exceeds this (px/frame) are
+    # tagged high-motion and get the extra refinement pass.
+    high_motion_px: float = 6.0
+    # Weight of the flow-warped alpha prior in high-motion regions.
+    warp_prior_weight: float = 0.5
+    # Photometric consistency threshold (0-255) for trusting the warp.
+    warp_consistency_thresh: float = 18.0
+
+
+@dataclass
+class ReIDConfig:
+    """Re-entry after occlusion.
+
+    The v1 pipeline decided "is this person new?" purely by overlap with the
+    current matte, i.e. there was no identity at all.  So a subject who is
+    occluded and re-enters is re-seeded as a stranger (fine) but can also be
+    double-counted, mis-associated, or missed entirely if they re-enter behind
+    an existing matte.  We keep a small DINOv3 feature pool per identity and
+    match detections against it.
+    """
+    enabled: bool = True
+    model: str = "facebook/dinov3-vitb16-pretrain-lvd1689m"
+    device: str = "auto"
+    # Embeddings kept per identity (only high-quality frames are banked).
+    pool_size: int = 12
+    # Cosine similarity above which a detection is the same identity.
+    match_threshold: float = 0.62
+    # Below this we treat it as a genuinely new person.
+    new_identity_threshold: float = 0.45
+    # Run the detector every N frames looking for uncovered/lost subjects.
+    scan_every: int = 8
+    # A detection counts as uncovered if the current matte covers less than
+    # this fraction of its box.
+    max_overlap: float = 0.35
+    min_area_frac: float = 0.0015
+    # When an identity is re-acquired, re-matte this many frames on each side
+    # of the gap so the alpha stitches seamlessly.
+    stitch_radius: int = 6
+
+
+@dataclass
+class RefineConfig:
+    """Boundary refinement and temporal stabilisation of the final alpha."""
+    # Run a per-frame matting head inside the flow-adaptive unknown band.
+    # This is what actually recovers blurred limbs.
+    band_refine: bool = True
+    # Flow-guided temporal filter: blends alpha with the motion-compensated
+    # previous alpha where the warp is photometrically consistent.  Reduces
+    # flicker without smearing fast motion.
+    temporal_filter: bool = True
+    temporal_alpha: float = 0.35
+    # Guided filter on the boundary band, edge-aware, cheap.
+    guided_filter: bool = True
+    guided_radius: int = 4
+    guided_eps: float = 1e-4
+
+
+@dataclass
+class DecontamConfig:
+    """Foreground colour decontamination.
+
+    Even a perfect alpha composites badly if you use the *observed* pixel as
+    the foreground colour, because in the boundary band the observed pixel is
+    already a mix of subject and old background.  You get a coloured fringe.
+    We solve I = a*F + (1-a)*B for F using multi-level fast foreground
+    estimation (Germer et al. 2020).
+    """
+    enabled: bool = True
+    regularization: float = 1e-5
+    # Upstream's published defaults are 10/2. Measured on a synthetic
+    # composite with known F and B, 10/2 leaves ~62% of the fringe error;
+    # 20/3 leaves ~40% and costs 0.72s vs 0.52s per 1080p frame. The
+    # solver converges (0.3% error at 120/30) -- this is purely a
+    # speed/accuracy dial, not a correctness limit.
+    n_small_iterations: int = 20
+    n_big_iterations: int = 3
+    small_size: int = 32
+    # Only bother where alpha is genuinely fractional.
+    band_only: bool = True
+    band_lo: float = 0.02
+    band_hi: float = 0.98
+
+
+@dataclass
+class Config:
+    io: IOConfig = field(default_factory=IOConfig)
+    shots: ShotConfig = field(default_factory=ShotConfig)
+    detect: DetectConfig = field(default_factory=DetectConfig)
+    seed: SeedConfig = field(default_factory=SeedConfig)
+    matting: MattingConfig = field(default_factory=MattingConfig)
+    memory_gate: MemoryGateConfig = field(default_factory=MemoryGateConfig)
+    motion: MotionConfig = field(default_factory=MotionConfig)
+    reid: ReIDConfig = field(default_factory=ReIDConfig)
+    refine: RefineConfig = field(default_factory=RefineConfig)
+    decontam: DecontamConfig = field(default_factory=DecontamConfig)
+
+    seed_value: int = 0
+    verbose: bool = True
+
+    # ------------------------------------------------------------------ #
+
+    def to_dict(self) -> Dict[str, Any]:
+        return dataclasses.asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> "Config":
+        kw: Dict[str, Any] = {}
+        for f in dataclasses.fields(cls):
+            if f.name not in d:
+                continue
+            v = d[f.name]
+            if dataclasses.is_dataclass(f.type) and isinstance(v, dict):
+                kw[f.name] = f.type(**v)          # type: ignore[operator]
+            elif isinstance(v, dict) and f.name in _SUB:
+                kw[f.name] = _SUB[f.name](**v)
+            else:
+                kw[f.name] = v
+        return cls(**kw)
+
+    @classmethod
+    def load(cls, path: str) -> "Config":
+        import yaml
+        with open(path, "r") as fh:
+            return cls.from_dict(yaml.safe_load(fh) or {})
+
+    def save(self, path: str) -> None:
+        import yaml
+        with open(path, "w") as fh:
+            yaml.safe_dump(self.to_dict(), fh, sort_keys=False)
+
+
+_SUB = {
+    "io": IOConfig,
+    "shots": ShotConfig,
+    "detect": DetectConfig,
+    "seed": SeedConfig,
+    "matting": MattingConfig,
+    "memory_gate": MemoryGateConfig,
+    "motion": MotionConfig,
+    "reid": ReIDConfig,
+    "refine": RefineConfig,
+    "decontam": DecontamConfig,
+}

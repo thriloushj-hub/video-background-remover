@@ -1,0 +1,74 @@
+{
+  "run": "v1_sam3_matanyone2",
+  "alpha_from": "green",
+  "short_side": 400,
+  "note": "scored from green composites (v1 emitted no alpha channel); ipman scored without motion compensation because 176 of its 501 frames are missing so alpha and source are not time-aligned",
+  "rows": [
+    {
+      "clip": "1917",
+      "run": "v1_sam3_matanyone2",
+      "frames": 724,
+      "edge_soft": 0.2704,
+      "edge_sharp": 0.6803,
+      "temporal": 0.1507,
+      "dropouts": 4,
+      "frag": 1.713,
+      "area_cv": 0.4439
+    },
+    {
+      "clip": "ipman",
+      "run": "v1_sam3_matanyone2",
+      "frames": 325,
+      "edge_soft": 0.2022,
+      "edge_sharp": 0.6823,
+      "temporal": 0.36978,
+      "dropouts": 0,
+      "frag": 1.561,
+      "area_cv": 0.2289
+    },
+    {
+      "clip": "butter",
+      "run": "v1_sam3_matanyone2",
+      "frames": 382,
+      "edge_soft": 0.2166,
+      "edge_sharp": 0.6923,
+      "temporal": 0.13123,
+      "dropouts": 1,
+      "frag": 2.896,
+      "area_cv": 0.5292
+    },
+    {
+      "clip": "dance",
+      "run": "v1_sam3_matanyone2",
+      "frames": 363,
+      "edge_soft": 0.1849,
+      "edge_sharp": 0.6995,
+      "temporal": 0.10867,
+      "dropouts": 1,
+      "frag": 3.055,
+      "area_cv": 0.1414
+    },
+    {
+      "clip": "shakira",
+      "run": "v1_sam3_matanyone2",
+      "frames": 369,
+      "edge_soft": 0.2153,
+      "edge_sharp": 0.6795,
+      "temporal": 0.14116,
+      "dropouts": 0,
+      "frag": 2.484,
+      "area_cv": 0.4354
+    },
+    {
+      "clip": "microsoft",
+      "run": "v1_sam3_matanyone2",
+      "frames": 567,
+      "edge_soft": 0.1712,
+      "edge_sharp": 0.672,
+      "temporal": 0.03521,
+      "dropouts": 0,
+      "frag": 2.0,
+      "area_cv": 0.0678
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+io:
+  input_dir: inputs
+  output_dir: results
+  output_mode: all
+  green:
+  - 0
+  - 177
+  - 64
+  max_size: null
+  crf: 16
+  save_frames: false
+  strict_frame_count: true
+shots:
+  enabled: true
+  cut_threshold: 0.35
+  hist_bins: 64
+  min_shot_len: 12
+  use_absdiff_guard: true
+  absdiff_sigma: 6.0
+detect:
+  model: yolov8x.pt
+  conf: 0.25
+  iou: 0.5
+  person_rel_size_min: 0.6
+  box_score_ratio: 0.15
+  device: auto
+seed:
+  mask_threshold: 0.0
+  detect_threshold: 0.35
+  concept_text: person
+  concept_text_detect: true
+  concept_match_iou: 0.4
+  force_interactive: true
+  interactive_mask_threshold: 0.0
+  box_clip_margin: 8
+  gate_background_regions: true
+  gate_bg_margin: 0.1
+  fill_mask_holes: true
+  gap_fill: true
+  gap_bg_margin: 0.12
+  gap_min_area: 64
+  gap_max_frac: 0.05
+matting:
+  engine: sam2matting
+  checkpoint: null
+  device: auto
+  half: true
+  n_warmup_static: 10
+  n_warmup_motion: 10
+  r_erode: 0
+  r_dilate: 6
+  drift_anchor_warmup: true
+  max_permanent_anchors: 24
+  strict_capabilities: false
+memory_gate:
+  enabled: true
+  max_area_ratio: 1.6
+  min_area_ratio: 0.55
+  min_flow_iou: 0.55
+  min_area_frac: 0.0008
+  lost_after: 8
+motion:
+  enabled: true
+  flow_method: dis
+  flow_scale_short_side: 480
+  trimap_base: 4.0
+  trimap_flow_gain: 0.9
+  trimap_max: 40.0
+  flow_smooth_sigma: 9.0
+  high_motion_px: 6.0
+  warp_prior_weight: 0.5
+  warp_consistency_thresh: 18.0
+reid:
+  enabled: true
+  model: facebook/dinov3-vitb16-pretrain-lvd1689m
+  device: auto
+  pool_size: 12
+  match_threshold: 0.62
+  new_identity_threshold: 0.45
+  scan_every: 8
+  max_overlap: 0.35
+  min_area_frac: 0.0015
+  stitch_radius: 6
+refine:
+  band_refine: true
+  temporal_filter: true
+  temporal_alpha: 0.35
+  guided_filter: true
+  guided_radius: 4
+  guided_eps: 0.0001
+decontam:
+  enabled: true
+  regularization: 1.0e-05
+  n_small_iterations: 20
+  n_big_iterations: 3
+  small_size: 32
+  band_only: true
+  band_lo: 0.02
+  band_hi: 0.98
+seed_value: 0
+verbose: true

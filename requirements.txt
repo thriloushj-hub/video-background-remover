@@ -1,0 +1,20 @@
+# core (CPU-only path: selftest, benchmark harness, all post-processing)
+numpy>=1.24
+opencv-python>=4.8
+scipy>=1.10
+PyYAML>=6.0
+
+# models (GPU path)
+torch>=2.4
+torchvision>=0.19
+ultralytics>=8.3          # YOLOv8x + SAM 3.  AGPL-3.0 -- see docs/LICENSING.md
+transformers>=4.44        # DINOv3 for re-identification
+iopath                    # required by SAM2Matting's checkpoint loader
+tqdm
+imageio
+imageio-ffmpeg
+
+# engines are installed from source, not PyPI:
+#   git clone https://github.com/FudanCVL/SAM2Matting third_party/SAM2Matting
+#   pip install -e third_party/SAM2Matting
+#   pip install -e git+https://github.com/pq-yang/MatAnyone2.git#egg=matanyone2

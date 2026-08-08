@@ -1,0 +1,24 @@
+# The frozen regression set. Do not change this list without a good reason:
+# the whole value of the harness is that runs are comparable over time.
+#
+# The three you flagged as broken:
+clips/1917.mp4
+clips/ipman.mp4
+clips/butter.mp4
+# Fast motion / dance, where motion blur dominates:
+clips/dance.mp4
+clips/dance2.mp4
+clips/dance3.mp4
+clips/shakira.mp4
+clips/mv.mp4
+# Multi-person and entrants:
+clips/tryguys.mp4
+clips/codylexi.mp4
+clips/asianboss2.mp4
+# Stable talking heads -- the control group. If these regress, the change is
+# trading general quality for hard-case quality and you need to know.
+clips/microsoft.mp4
+clips/interview.mp4
+clips/jensen.mp4
+clips/eddie.mp4
+clips/leo.mp4

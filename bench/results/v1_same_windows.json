@@ -1,0 +1,20 @@
+[
+  {
+    "model": "v1 (butter)",
+    "area_cv": 0.372,
+    "edge_soft": 0.3697,
+    "dropouts": 0,
+    "mean_area": 0.4124,
+    "frames": 72,
+    "clip": "butter"
+  },
+  {
+    "model": "v1 (1917)",
+    "area_cv": 0.0233,
+    "edge_soft": 0.3659,
+    "dropouts": 0,
+    "mean_area": 0.3051,
+    "frames": 72,
+    "clip": "1917"
+  }
+]
