@@ -1,0 +1,184 @@
+{
+  "run": "v1_sam3_matanyone2",
+  "alpha_from": "green",
+  "short_side": 400,
+  "note": "scored from green composites (v1 emitted no alpha channel); ipman scored without motion compensation because 176 of its 501 frames are missing so alpha and source are not time-aligned; dance2/tryguys/interview also scored without motion compensation due to a 1-frame source/output count mismatch (same class of issue as BUGS.md #1, much smaller magnitude); dance3/mv/codylexi/asianboss2/jensen/leo have the standard multiple-of-16 padding mismatch documented in BUGS.md #3 and were resampled to source dimensions before scoring.",
+  "rows": [
+    {
+      "clip": "1917",
+      "run": "v1_sam3_matanyone2",
+      "frames": 724,
+      "edge_soft": 0.2704,
+      "edge_sharp": 0.6803,
+      "temporal": 0.1507,
+      "dropouts": 4,
+      "frag": 1.713,
+      "area_cv": 0.4439
+    },
+    {
+      "clip": "ipman",
+      "run": "v1_sam3_matanyone2",
+      "frames": 325,
+      "edge_soft": 0.2022,
+      "edge_sharp": 0.6823,
+      "temporal": 0.36978,
+      "dropouts": 0,
+      "frag": 1.561,
+      "area_cv": 0.2289
+    },
+    {
+      "clip": "butter",
+      "run": "v1_sam3_matanyone2",
+      "frames": 382,
+      "edge_soft": 0.2166,
+      "edge_sharp": 0.6923,
+      "temporal": 0.13123,
+      "dropouts": 1,
+      "frag": 2.896,
+      "area_cv": 0.5292
+    },
+    {
+      "clip": "dance",
+      "run": "v1_sam3_matanyone2",
+      "frames": 363,
+      "edge_soft": 0.1849,
+      "edge_sharp": 0.6995,
+      "temporal": 0.10867,
+      "dropouts": 1,
+      "frag": 3.055,
+      "area_cv": 0.1414
+    },
+    {
+      "clip": "dance2",
+      "run": "v1_sam3_matanyone2",
+      "frames": 607,
+      "edge_soft": 0.17,
+      "edge_sharp": 0.6785,
+      "temporal": 0.37092,
+      "dropouts": 0,
+      "frag": 1.0,
+      "area_cv": 0.1622
+    },
+    {
+      "clip": "dance3",
+      "run": "v1_sam3_matanyone2",
+      "frames": 619,
+      "edge_soft": 0.1904,
+      "edge_sharp": 0.6891,
+      "temporal": 0.13406,
+      "dropouts": 0,
+      "frag": 1.955,
+      "area_cv": 0.1573
+    },
+    {
+      "clip": "shakira",
+      "run": "v1_sam3_matanyone2",
+      "frames": 369,
+      "edge_soft": 0.2153,
+      "edge_sharp": 0.6795,
+      "temporal": 0.14116,
+      "dropouts": 0,
+      "frag": 2.484,
+      "area_cv": 0.4354
+    },
+    {
+      "clip": "mv",
+      "run": "v1_sam3_matanyone2",
+      "frames": 588,
+      "edge_soft": 0.1928,
+      "edge_sharp": 0.6688,
+      "temporal": 0.10245,
+      "dropouts": 3,
+      "frag": 1.721,
+      "area_cv": 0.6302
+    },
+    {
+      "clip": "tryguys",
+      "run": "v1_sam3_matanyone2",
+      "frames": 250,
+      "edge_soft": 0.3884,
+      "edge_sharp": 0.4697,
+      "temporal": 0.08327,
+      "dropouts": 0,
+      "frag": 1.0,
+      "area_cv": 0.0004
+    },
+    {
+      "clip": "codylexi",
+      "run": "v1_sam3_matanyone2",
+      "frames": 490,
+      "edge_soft": 0.1971,
+      "edge_sharp": 0.6796,
+      "temporal": 0.03975,
+      "dropouts": 0,
+      "frag": 1.0,
+      "area_cv": 0.0185
+    },
+    {
+      "clip": "asianboss2",
+      "run": "v1_sam3_matanyone2",
+      "frames": 354,
+      "edge_soft": 0.1907,
+      "edge_sharp": 0.6716,
+      "temporal": 0.0363,
+      "dropouts": 0,
+      "frag": 1.0,
+      "area_cv": 0.0103
+    },
+    {
+      "clip": "microsoft",
+      "run": "v1_sam3_matanyone2",
+      "frames": 567,
+      "edge_soft": 0.1712,
+      "edge_sharp": 0.672,
+      "temporal": 0.03521,
+      "dropouts": 0,
+      "frag": 2.0,
+      "area_cv": 0.0678
+    },
+    {
+      "clip": "interview",
+      "run": "v1_sam3_matanyone2",
+      "frames": 642,
+      "edge_soft": 0.163,
+      "edge_sharp": 0.6751,
+      "temporal": 0.13877,
+      "dropouts": 0,
+      "frag": 1.925,
+      "area_cv": 0.0952
+    },
+    {
+      "clip": "jensen",
+      "run": "v1_sam3_matanyone2",
+      "frames": 509,
+      "edge_soft": 0.1872,
+      "edge_sharp": 0.6697,
+      "temporal": 0.03038,
+      "dropouts": 0,
+      "frag": 1.0,
+      "area_cv": 0.0136
+    },
+    {
+      "clip": "eddie",
+      "run": "v1_sam3_matanyone2",
+      "frames": 143,
+      "edge_soft": 0.2287,
+      "edge_sharp": 0.6755,
+      "temporal": 0.03603,
+      "dropouts": 0,
+      "frag": 1.0,
+      "area_cv": 0.218
+    },
+    {
+      "clip": "leo",
+      "run": "v1_sam3_matanyone2",
+      "frames": 208,
+      "edge_soft": 0.2155,
+      "edge_sharp": 0.6729,
+      "temporal": 0.05116,
+      "dropouts": 0,
+      "frag": 1.0,
+      "area_cv": 0.3234
+    }
+  ]
+}
