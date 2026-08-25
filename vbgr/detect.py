@@ -107,24 +107,66 @@ def prominence(d: Detection, W: int, H: int) -> float:
     return float(d.conf * max(centrality, 0.0) * (d.area / max(W * H, 1)))
 
 
+def _touches_edge(d: Detection, W: int, H: int, margin: int = 4) -> bool:
+    """True if the box runs into any frame edge, i.e. the person is cropped."""
+    return (d.box[0] <= margin or d.box[1] <= margin or
+            d.box[2] >= W - margin or d.box[3] >= H - margin)
+
+
 def select_person_boxes(people: Sequence[Detection], W: int, H: int,
                         rel_size_min: float = 0.60,
-                        score_ratio: float = 0.15
+                        score_ratio: float = 0.15,
+                        rel_area_min: float = 0.20,
                         ) -> Tuple[List[Detection], List[Detection]]:
     """Split detections into subjects and background bystanders.
 
-    Returns ``(kept, dropped)``.  The size gate is on **height** and ignores
-    position -- see the module docstring for the two failures that forced this.
+    Two gates, deliberately:
+
+    * **Height**, as before, ignoring position.  This is what lets a full-height
+      person entering from the frame edge survive -- their *area* is small
+      because they are horizontally cropped, so an area-only gate drops them.
+      That failure is why this gate was height-based in the first place.
+
+    * **Area, but only for boxes that do not touch a frame edge.**  Height alone
+      cannot tell "close" from "far": measured on 1917, the background soldier
+      is 0.658 of the foreground soldier's height -- clearing a 0.60 height gate
+      -- but only 0.149 of his box area.  Under perspective, apparent area falls
+      off as roughly the square of apparent height, so area separates near from
+      far far more sharply.  Restricting the area gate to boxes that are *not*
+      cropped by the frame keeps the edge-entrant guarantee intact, because a
+      cropped box is exactly the case where small area does not mean far away.
+
+    Measured on the three test clips, first frame (height / box-area / edge):
+
+        ipman   1.000 1.000 edge   0.413 0.098 -      (5 more, all < 0.35)
+        butter  1.000 1.000 edge   0.943 0.312 -      0.900 0.500 -
+                0.799 0.281 -      0.793 0.191 -      0.772 0.150 -
+                0.159 0.014 -
+        1917    1.000 1.000 edge   0.658 0.149 -      0.501 0.084 edge
+
+    ``rel_area_min=0.20`` drops 1917's background soldier (0.149) and leaves
+    ipman at one subject.  It also drops butter's two smallest standing figures
+    (0.191, 0.150), taking butter from 6 kept to 4 -- see docs, that one is a
+    judgement call about the shot rather than a defect.
+
+    Returns ``(kept, dropped)``.
     """
     if not people:
         return [], []
 
     tallest = max(d.height for d in people)
+    largest = max(d.area for d in people) or 1e-9
     top_conf = max(d.conf for d in people) or 1e-9
 
     kept, dropped = [], []
     for d in people:
         if d.height < rel_size_min * tallest:
+            dropped.append(d)
+        elif (rel_area_min > 0
+              and not _touches_edge(d, W, H)
+              and d.area < rel_area_min * largest):
+            # Passed the height gate but is small in area and is not cropped by
+            # the frame: a distant bystander, not a near subject.
             dropped.append(d)
         elif d.conf < score_ratio * top_conf:
             # Confidence floor only.  It is tempting to floor on prominence
