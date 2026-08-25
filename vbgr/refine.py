@@ -104,6 +104,9 @@ class TemporalStabilizer:
 # Band refinement using a per-frame matting head
 # --------------------------------------------------------------------------- #
 
+_WARNED = {"head_none": False}
+
+
 def refine_band(alpha: np.ndarray,
                 frame_bgr: np.ndarray,
                 trimap: np.ndarray,
@@ -123,9 +126,28 @@ def refine_band(alpha: np.ndarray,
     if not unknown.any():
         return a
 
+    refined = None
     if head is not None:
-        refined = np.clip(np.asarray(head(frame_bgr, trimap), np.float32), 0.0, 1.0)
-    else:
+        got = head(frame_bgr, trimap)
+        # A head that declines returns None.  np.asarray(None) is a 0-d NaN
+        # array, so the old code got all the way to `refined[unknown]` and died
+        # with "IndexError: invalid index to scalar variable" -- a message that
+        # names neither the head nor the engine.  SAM2Matting's matte_frame
+        # returns None by design; see its docstring.
+        if got is None:
+            if not _WARNED["head_none"]:
+                print("[refine] matting head returned None; falling back to "
+                      "the guided filter. The band is being smoothed, not "
+                      "re-matted -- say so in any write-up.")
+                _WARNED["head_none"] = True
+        else:
+            got = np.asarray(got, np.float32)
+            if got.shape != a.shape:
+                raise ValueError(
+                    f"[refine] matting head returned {got.shape}, expected "
+                    f"{a.shape}")
+            refined = np.clip(got, 0.0, 1.0)
+    if refined is None:
         refined = guided_filter(a, frame_bgr, radius=6, eps=1e-4, band_only=False)
 
     out = a.copy()

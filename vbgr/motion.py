@@ -237,3 +237,147 @@ def blend_with_prior(alpha: np.ndarray,
     motion_w = np.clip(flow_mag / max(high_motion_px, 1e-6), 0.0, 1.0)
     w = (weight * trust * motion_w).astype(np.float32)
     return np.clip(alpha * (1.0 - w) + warped_alpha * w, 0.0, 1.0)
+
+
+# --------------------------------------------------------------------------- #
+# Camera motion vs subject motion
+# --------------------------------------------------------------------------- #
+
+def global_affine(flow: np.ndarray, step: int = 8,
+                  trim_rounds: int = 2, trim_frac: float = 0.35
+                  ) -> np.ndarray:
+    """Fit the 2x3 affine that best explains `flow` as a camera move.
+
+    A dolly, pan, tilt or zoom moves *every* pixel in a way an affine describes
+    well.  A person moving does not.  So the affine fit is the camera, and what
+    is left over is the subjects.
+
+    Fitted on a subsampled grid and then re-fitted twice after discarding the
+    worst ``trim_frac`` of residuals, so a large fast subject cannot drag the
+    model onto itself.  Plain least squares is not enough here: on the butter
+    window four dancers fill the frame at the start.
+    """
+    h, w = flow.shape[:2]
+    ys, xs = np.mgrid[0:h:step, 0:w:step]
+    xs = xs.ravel().astype(np.float32)
+    ys = ys.ravel().astype(np.float32)
+    u = flow[::step, ::step, 0].ravel().astype(np.float32)
+    v = flow[::step, ::step, 1].ravel().astype(np.float32)
+
+    A = np.stack([xs, ys, np.ones_like(xs)], 1)
+    keep = np.ones(len(xs), bool)
+    M = np.zeros((2, 3), np.float32)
+    for _ in range(trim_rounds + 1):
+        if keep.sum() < 12:
+            break
+        sol_u, *_ = np.linalg.lstsq(A[keep], u[keep], rcond=None)
+        sol_v, *_ = np.linalg.lstsq(A[keep], v[keep], rcond=None)
+        M = np.stack([sol_u, sol_v]).astype(np.float32)
+        r = np.hypot(A @ sol_u - u, A @ sol_v - v)
+        cut = np.quantile(r, 1.0 - trim_frac)
+        keep = r <= max(cut, 1e-6)
+    return M
+
+
+def decompose_motion(flow: np.ndarray, step: int = 8,
+                     percentile: float = 95.0):
+    """Split a flow field into camera and subject motion, in px/frame.
+
+    Returns ``(camera_px, subject_px, residual_map)``:
+
+    * ``camera_px``  -- median magnitude of the fitted global affine, i.e. how
+      much the whole frame is moving.
+    * ``subject_px`` -- ``percentile``-th percentile of the residual after the
+      camera model is removed, i.e. how much the *content* is moving on top of
+      the camera.
+    * ``residual_map`` -- the per-pixel residual magnitude.
+
+    Why this exists: candidate benchmark windows were being ranked on raw mean
+    flow, and on butter that picked a **dolly-back** -- 37 px/frame of camera,
+    not of dancers.  Ranking on ``subject_px`` picks the window where the
+    subjects are actually hard.
+    """
+    h, w = flow.shape[:2]
+    M = global_affine(flow, step=step)
+    ys, xs = np.mgrid[0:h, 0:w]
+    gx = M[0, 0] * xs + M[0, 1] * ys + M[0, 2]
+    gy = M[1, 0] * xs + M[1, 1] * ys + M[1, 2]
+    camera = float(np.median(np.hypot(gx, gy)))
+    resid = np.hypot(flow[:, :, 0] - gx, flow[:, :, 1] - gy).astype(np.float32)
+    return camera, float(np.percentile(resid, percentile)), resid
+
+
+def texture_coverage(frame_bgr: np.ndarray, min_grad: float = 8.0,
+                     sigma: float = 3.0) -> float:
+    """Fraction of the frame with enough gradient for flow to mean anything.
+
+    Optical flow is undefined on a featureless surface: there is nothing to
+    match, so DIS returns something near zero no matter how the camera moves.
+    On the butter window the background is a smooth colour-gradient wall, only
+    25% of the frame carries usable texture, and the flow field consequently
+    reports a nearly static camera while the framing is visibly pulling back.
+
+    Anything derived from flow -- ``decompose_motion`` here, but also the
+    flow-warped alpha prior and the flow-adaptive trimap in the motion fix --
+    is only as trustworthy as this number.  Below about 0.35 treat flow-derived
+    quantities as indicative, not evidence.
+    """
+    g = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY).astype(np.float32)
+    gx = cv2.Sobel(g, cv2.CV_32F, 1, 0, 3)
+    gy = cv2.Sobel(g, cv2.CV_32F, 0, 1, 3)
+    tex = cv2.GaussianBlur(np.hypot(gx, gy), (0, 0), sigma)
+    return float((tex > min_grad).mean())
+
+
+def subject_motion(frames, masks, percentile: float = 95.0,
+                   min_pixels: int = 500, flow=None):
+    """Flow magnitude measured *inside the subject*, in px/frame.
+
+    ``decompose_motion`` works by fitting a global affine to the whole flow
+    field and calling the residual "subject motion".  That fails on footage
+    with a flat background: optical flow is undefined where there is nothing
+    to match, so on butter three quarters of the frame reports a static scene
+    while the framing is visibly pulling back, and the affine ends up fitted to
+    the dancers -- the very thing it is meant to exclude.
+
+    Restricting the measurement to the subject sidesteps the problem entirely,
+    because people are textured even when their background is not.  Measured
+    over each clip's benchmark window:
+
+        clip       texture, whole frame    texture, inside subject
+        butter              22%                     61%
+        shakira             24%                     72%
+        dance               31%                     87%
+        1917                93%                     84%
+        ipman               51%                     52%
+
+    The three clips that fall below the 0.35 usability floor frame-wide are
+    comfortably above it inside the subject, and the clips that were already
+    fine do not regress.
+
+    ``masks`` is one boolean/0-1 mask per frame.  v1's matte works as a source
+    for these, which is what makes this runnable on CPU with no seeding stage.
+
+    Returns ``(subject_px, texture_in_subject)``.  Read ``texture_in_subject``
+    first: below ~0.35 the number is still indicative only -- ``microsoft`` is
+    such a case at 0.30, a smoothly lit talking head on a plain backdrop.
+    """
+    fe = flow or FlowEstimator()
+    mags, texs = [], []
+    for i in range(1, len(frames)):
+        m = np.asarray(masks[i], bool)
+        if m.shape != frames[i].shape[:2]:
+            m = cv2.resize(m.astype(np.uint8), frames[i].shape[1::-1],
+                           interpolation=cv2.INTER_NEAREST).astype(bool)
+        if int(m.sum()) < min_pixels:
+            continue
+        fl = fe.flow(frames[i - 1], frames[i])
+        mags.append(float(np.percentile(np.linalg.norm(fl, axis=2)[m], percentile)))
+        g = cv2.cvtColor(frames[i], cv2.COLOR_BGR2GRAY).astype(np.float32)
+        t = cv2.GaussianBlur(np.hypot(cv2.Sobel(g, cv2.CV_32F, 1, 0, 3),
+                                      cv2.Sobel(g, cv2.CV_32F, 0, 1, 3)),
+                             (0, 0), 3.0) > 8.0
+        texs.append(float(t[m].mean()))
+    if not mags:
+        return 0.0, 0.0
+    return float(np.mean(mags)), float(np.mean(texs))
