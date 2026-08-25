@@ -52,7 +52,7 @@ matting:
   drift_anchor_warmup: true
   max_permanent_anchors: 24
   strict_capabilities: false
-memory_gate:
+track_health:
   enabled: true
   max_area_ratio: 1.6
   min_area_ratio: 0.55

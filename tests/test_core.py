@@ -358,10 +358,15 @@ def test_temporal_stabiliser_does_not_ghost_fast_motion():
 # --------------------------------------------------------------------------- #
 # capability / kwarg-drop reporting
 #
-# The failure this guards against: an engine declares memory_gate, the kwarg
+# The failure this guards against: an engine declares a capability, the kwarg
 # backing it does not exist on the installed API, filter_kwargs drops it, the
-# run completes, gate_rejects reports 47, and the gate did nothing. Every
+# run completes, a counter reports 47, and the feature did nothing. Every
 # ablation built on that is noise. So the drop must be loud and recorded.
+#
+# These used to be written against update_memory / memory_gate. That feature
+# was dropped in task 3.4, so they now bind to force_permanent /
+# permanent_memory, which is the remaining critical kwarg. The mechanism under
+# test is unchanged.
 # --------------------------------------------------------------------------- #
 
 def _fresh_engine():
@@ -388,45 +393,45 @@ def test_dropping_a_critical_kwarg_warns_and_records():
     import warnings as W
     from vbgr.engines.base import filter_kwargs
     eng = _fresh_engine()
-    def step_without_gate(image): pass
+    def step_without_anchor(image): pass
 
     with W.catch_warnings(record=True) as caught:
         W.simplefilter("always")
-        kept = filter_kwargs(step_without_gate, {"update_memory": False},
+        kept = filter_kwargs(step_without_anchor, {"force_permanent": True},
                              engine=eng, where="test")
 
     assert kept == {}, "the unsupported kwarg should not be passed on"
     assert any(issubclass(w.category, RuntimeWarning) for w in caught), \
         "dropping a critical kwarg must raise a RuntimeWarning"
-    assert "memory_gate" in str(caught[0].message)
-    assert "update_memory" in eng.degraded
-    assert not eng.feature_active("update_memory")
+    assert "permanent" in str(caught[0].message)
+    assert "force_permanent" in eng.degraded
+    assert not eng.feature_active("force_permanent")
 
 
 def test_supported_kwarg_is_passed_through_silently():
     import warnings as W
     from vbgr.engines.base import filter_kwargs
     eng = _fresh_engine()
-    def step_with_gate(image, update_memory=True): pass
+    def step_with_anchor(image, force_permanent=False): pass
 
     with W.catch_warnings(record=True) as caught:
         W.simplefilter("always")
-        kept = filter_kwargs(step_with_gate, {"update_memory": False},
+        kept = filter_kwargs(step_with_anchor, {"force_permanent": True},
                              engine=eng, where="test")
-    assert kept == {"update_memory": False}
+    assert kept == {"force_permanent": True}
     assert not caught, "a supported kwarg must not warn"
     assert eng.degraded == {}
-    assert eng.feature_active("update_memory")
+    assert eng.feature_active("force_permanent")
 
 
 def test_require_kwarg_raises_in_strict_mode():
     from vbgr.engines.base import require_kwarg, CapabilityError
     eng = _fresh_engine()
-    def step_without_gate(image): pass
+    def step_without_anchor(image): pass
     try:
-        require_kwarg(step_without_gate, "update_memory", eng, strict=True)
+        require_kwarg(step_without_anchor, "force_permanent", eng, strict=True)
     except CapabilityError as e:
-        assert "memory_gate" in str(e)
+        assert "permanent" in str(e)
         return
     raise AssertionError("strict mode must raise CapabilityError")
 
@@ -435,48 +440,90 @@ def test_require_kwarg_warns_but_continues_when_not_strict():
     import warnings as W
     from vbgr.engines.base import require_kwarg
     eng = _fresh_engine()
-    def step_without_gate(image): pass
+    def step_without_anchor(image): pass
     with W.catch_warnings(record=True) as caught:
         W.simplefilter("always")
-        ok = require_kwarg(step_without_gate, "update_memory", eng, strict=False)
+        ok = require_kwarg(step_without_anchor, "force_permanent", eng,
+                           strict=False)
     assert ok is False
     assert caught, "non-strict mode must still warn"
-    assert not eng.feature_active("update_memory")
+    assert not eng.feature_active("force_permanent")
 
 
-def test_pipeline_reports_gate_as_ineffective_when_kwarg_was_dropped():
-    """The whole point: gate_is_effective must be False even though the engine
-    still *declares* memory_gate in its capability set."""
-    from vbgr.config import Config
-    from vbgr.pipeline import Pipeline
-    cfg = Config()
-    cfg.matting.engine = "passthrough"
-    cfg.memory_gate.enabled = True
-    pipe = Pipeline(cfg)
-    eng = pipe.engine
-    eng._degraded = {}
+# --------------------------------------------------------------------------- #
+# task 3.4 -- the memory gate is dropped, and must stay dropped
+#
+# It was never able to work: MatAnyone 2's InferenceCore.step() takes no
+# **kwargs, and SAM2Matting (the chosen model) has no step() at all, so it runs
+# batch and never reached the streaming path. What it did produce was a
+# rejection counter that looked like work. These guard against it coming back
+# as a silent no-op.
+# --------------------------------------------------------------------------- #
 
-    assert eng.has("memory_gate"), "passthrough declares the capability"
-    assert pipe.gate_is_effective(), "should be effective before any drop"
-
-    eng.note_degraded("update_memory", "memory_gate")
-    assert not pipe.gate_is_effective(), \
-        "a declared-but-dead capability must not count as effective"
+def test_no_engine_declares_the_dropped_memory_gate():
+    for key, info in list_engines().items():
+        assert "memory_gate" not in info.capabilities, (
+            f"{key} still declares memory_gate, which was dropped in 3.4")
 
 
-def test_summary_flags_unenforced_rejections():
+def test_memory_gate_kwargs_are_no_longer_critical():
+    from vbgr.engines.base import CAPABILITY_KWARG, CRITICAL_KWARGS
+    assert "update_memory" not in CRITICAL_KWARGS
+    assert "commit_to_memory" not in CRITICAL_KWARGS
+    assert "memory_gate" not in CAPABILITY_KWARG
+
+
+def test_pipeline_never_asks_an_engine_to_withhold_a_frame():
+    """The dropped behaviour was a commit_to_memory=False retry.
+
+    Checked on the parsed AST rather than the source text, so that a comment
+    explaining why the retry is gone does not read as the retry being present.
+    """
+    import ast
+    import inspect
+    from vbgr import pipeline as P
+
+    tree = ast.parse(inspect.getsource(P))
+    offenders = [n.lineno for n in ast.walk(tree)
+                 if isinstance(n, ast.Call)
+                 for kw in n.keywords
+                 if kw.arg in ("commit_to_memory", "update_memory")]
+    assert not offenders, (
+        f"the memory-gate retry is back at line(s) {offenders}; 3.4 dropped "
+        f"it because no usable engine honours the kwarg")
+
+
+def test_summary_labels_bad_frames_as_diagnostic():
+    """The old field was gate_rejects, which read as work performed."""
     from vbgr.pipeline import ClipReport, ShotReport
     r = ClipReport(name="x", n_frames=10, fps=24.0, engine="e")
-    s = ShotReport(start=0, end=10); s.gate_rejects = 47
+    s = ShotReport(start=0, end=10); s.bad_frames = 47
     r.shots.append(s)
-    assert "gate_rejects=47" in r.summary()
-    assert "NOT ENFORCED" not in r.summary()
-
-    s.gate_rejects_unenforced = 47
-    r.degraded = {"update_memory": "memory_gate"}
     out = r.summary()
-    assert "NOT ENFORCED" in out, "a dead gate must not print a bare count"
-    assert "DEGRADED" in out
+    assert "bad_frames=47(diagnostic)" in out
+    assert "gate_rejects" not in out
+
+
+def test_old_configs_using_memory_gate_still_load_and_warn():
+    import warnings as W
+    from vbgr.config import Config
+    with W.catch_warnings(record=True) as caught:
+        W.simplefilter("always")
+        cfg = Config.from_dict({"memory_gate": {"lost_after": 3}})
+    assert cfg.track_health.lost_after == 3, \
+        "a renamed section must be honoured, not silently dropped"
+    assert any(issubclass(w.category, DeprecationWarning) for w in caught)
+
+
+def test_config_refuses_both_old_and_new_section_names():
+    from vbgr.config import Config
+    try:
+        Config.from_dict({"memory_gate": {"lost_after": 3},
+                          "track_health": {"lost_after": 8}})
+    except ValueError as e:
+        assert "memory_gate" in str(e)
+        return
+    raise AssertionError("setting both names must be an error, not a coin toss")
 
 
 def test_every_engine_declares_its_licence():

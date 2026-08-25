@@ -49,11 +49,12 @@ class ShotReport:
     end: int
     n_kept: int = 0
     n_dropped: int = 0
-    gate_rejects: int = 0
-    # Rejections the gate identified but could NOT act on, because the engine
-    # has no working memory-control kwarg. If this is nonzero, gate_rejects is
-    # a diagnostic count only and the gate changed nothing.
-    gate_rejects_unenforced: int = 0
+    # Frames scored as bad by the track-health monitor. Diagnostic only: the
+    # monitor's one action is to declare the track lost and trigger a reseed
+    # (see `reseeds`). It no longer tries to withhold frames from the engine's
+    # memory -- that was task 3.4's memory gate, dropped 2026-08-23 because no
+    # usable engine exposes the hook.
+    bad_frames: int = 0
     reseeds: int = 0
     reentries: int = 0
     high_motion_frames: int = 0
@@ -74,19 +75,16 @@ class ClipReport:
     degraded: Dict[str, Optional[str]] = field(default_factory=dict)
 
     def summary(self) -> str:
-        gr = sum(s.gate_rejects for s in self.shots)
-        gu = sum(s.gate_rejects_unenforced for s in self.shots)
+        bf = sum(s.bad_frames for s in self.shots)
         rs = sum(s.reseeds for s in self.shots)
         re_ = sum(s.reentries for s in self.shots)
         hm = sum(s.high_motion_frames for s in self.shots)
-        # Never print a bare gate_rejects count when the gate could not act on
-        # them. The number would read as "the gate did 47 things" when the
-        # honest reading is "the gate spotted 47 things and did nothing".
-        gate = f"gate_rejects={gr}" if gu == 0 else \
-               f"gate_rejects={gr}(NOT ENFORCED, {gu} unacted)"
+        # bad_frames is explicitly labelled diagnostic. The old field was
+        # called gate_rejects, which read as "the gate did 47 things" when the
+        # honest reading was "the gate spotted 47 things and did nothing".
         out = (f"{self.name}: {self.n_frames}f @{self.fps:.3f} "
                f"{len(self.shots)} shot(s) engine={self.engine} "
-               f"{gate} reseeds={rs} reentries={re_} "
+               f"bad_frames={bf}(diagnostic) reseeds={rs} reentries={re_} "
                f"high_motion={hm} {self.seconds:.1f}s")
         if self.degraded:
             out += ("\n  DEGRADED: " +
@@ -124,18 +122,6 @@ class Pipeline:
             self._engine = build_engine(
                 m.engine, require_commercial=self.require_commercial, **kw)
         return self._engine
-
-    def gate_is_effective(self) -> bool:
-        """True only if the memory gate is BOTH enabled and actually wired.
-
-        `engine.has('memory_gate')` reports what the engine *declares*. This
-        additionally checks that the kwarg backing it survived the signature
-        check on the installed API. The difference between those two is a
-        memory gate that emits rejection counters while doing nothing.
-        """
-        return (self.cfg.memory_gate.enabled
-                and self.engine.has("memory_gate")
-                and self.engine.feature_active("update_memory"))
 
     @property
     def detector(self) -> PersonDetector:
@@ -213,7 +199,7 @@ class Pipeline:
         people, props = self.detector.detect(frames[0])
         kept, dropped = select_person_boxes(
             people, W, H, cfg.detect.person_rel_size_min,
-            cfg.detect.box_score_ratio)
+            cfg.detect.box_score_ratio, cfg.detect.person_rel_area_min)
         rep.n_kept, rep.n_dropped = len(kept), len(dropped)
 
         if not kept:
@@ -245,15 +231,15 @@ class Pipeline:
         return alphas, rep
 
     # ------------------------------------------------------------------ #
-    # Streaming matting with the memory gate
+    # Streaming matting with the track-health monitor
     # ------------------------------------------------------------------ #
 
     def _matte_streaming(self, frames, seed_mask, rep: ShotReport):
         cfg = self.cfg
         gate = QualityGate(
-            cfg.memory_gate.max_area_ratio, cfg.memory_gate.min_area_ratio,
-            cfg.memory_gate.min_flow_iou, cfg.memory_gate.min_area_frac,
-            lost_after=cfg.memory_gate.lost_after)
+            cfg.track_health.max_area_ratio, cfg.track_health.min_area_ratio,
+            cfg.track_health.min_flow_iou, cfg.track_health.min_area_frac,
+            lost_after=cfg.track_health.lost_after)
 
         a0 = self.engine.start(frames[0], seed_mask,
                                n_warmup=cfg.matting.n_warmup_static)
@@ -273,19 +259,17 @@ class Pipeline:
         for i in range(1, len(frames)):
             fl = self._flow.flow(prev, frames[i])
             a = self.engine.step(frames[i])
-            v = gate.evaluate(a, frames[i], fl) if cfg.memory_gate.enabled \
+            v = gate.evaluate(a, frames[i], fl) if cfg.track_health.enabled \
                 else None
 
             if v is not None and not v.ok:
-                rep.gate_rejects += 1
-                if self.gate_is_effective():
-                    # Re-run the frame without committing it, so the bad mask
-                    # never enters the memory bank. gate_is_effective() rather
-                    # than has('memory_gate'): the latter is what the engine
-                    # claims, the former is what actually works.
-                    a = self.engine.step(frames[i], commit_to_memory=False)
-                else:
-                    rep.gate_rejects_unenforced += 1
+                rep.bad_frames += 1
+                # There is deliberately no commit_to_memory=False retry here.
+                # That was the memory gate (3.4) and it is dropped: MatAnyone 2
+                # takes no **kwargs on step(), and SAM2Matting has no step() at
+                # all, so this branch never fired on anything we ship. What is
+                # left is the part that never needed the engine's help --
+                # noticing the track is gone and re-seeding.
                 if gate.track_lost:
                     a, ok = self._reseed(frames[i], i, rep)
                     if ok:
@@ -304,7 +288,8 @@ class Pipeline:
         people, props = self.detector.detect(frame)
         kept, _ = select_person_boxes(
             people, W, H, self.cfg.detect.person_rel_size_min,
-            self.cfg.detect.box_score_ratio)
+            self.cfg.detect.box_score_ratio,
+            self.cfg.detect.person_rel_area_min)
         if not kept:
             return np.zeros((H, W), np.float32), False
         seed = build_seed(frame, self.seeder, kept,
@@ -350,7 +335,8 @@ class Pipeline:
             people, _ = self.detector.detect(frames[i])
             kept, _ = select_person_boxes(
                 people, W, H, cfg.detect.person_rel_size_min,
-                cfg.detect.box_score_ratio)
+                cfg.detect.box_score_ratio,
+                cfg.detect.person_rel_area_min)
             if not kept:
                 continue
             unc = uncovered_boxes(alphas[i], [d.box for d in kept],
@@ -396,7 +382,8 @@ class Pipeline:
         people, props = self.detector.detect(frames[anchor])
         kept, _ = select_person_boxes(people, W, H,
                                       cfg.detect.person_rel_size_min,
-                                      cfg.detect.box_score_ratio)
+                                      cfg.detect.box_score_ratio,
+                                      cfg.detect.person_rel_area_min)
         if not kept:
             return None
         seed = build_seed(frames[anchor], self.seeder, kept,
@@ -423,7 +410,8 @@ class Pipeline:
         people, props = self.detector.detect(frames[anchor])
         kept, _ = select_person_boxes(people, W, H,
                                       cfg.detect.person_rel_size_min,
-                                      cfg.detect.box_score_ratio)
+                                      cfg.detect.box_score_ratio,
+                                      cfg.detect.person_rel_area_min)
         if not kept:
             return None
         seed = build_seed(frames[anchor], self.seeder, kept,

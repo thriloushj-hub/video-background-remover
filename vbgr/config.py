@@ -7,6 +7,7 @@ for 1080p 24fps footage; see configs/ for per-scenario overrides.
 from __future__ import annotations
 
 import dataclasses
+import warnings
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Literal, Optional
 
@@ -58,6 +59,14 @@ class DetectConfig:
     # treated as a background bystander.  Height, not area: height survives
     # horizontal cropping when someone enters from the frame edge.
     person_rel_size_min: float = 0.60
+    # Second gate, applied ONLY to boxes that do not touch a frame edge: a
+    # person whose box area is below this fraction of the largest person's is a
+    # distant bystander.  Height cannot separate near from far (1917's
+    # background soldier is 0.658 of the foreground soldier's height but 0.149
+    # of his area); area can, because area goes as roughly height squared.  The
+    # edge exemption preserves the full-height-but-cropped entrant case above.
+    # Set to 0.0 to disable and fall back to height-only behaviour.
+    person_rel_area_min: float = 0.20
     # Prominence = conf * centrality * area, used only for ranking + a floor.
     box_score_ratio: float = 0.15
     # CLAHE is deliberately NOT used: it pushes frames out of YOLO's training
@@ -118,12 +127,25 @@ class MattingConfig:
 
 
 @dataclass
-class MemoryGateConfig:
-    """Stop bad frames from poisoning the propagator's memory.
+class TrackHealthConfig:
+    """Score each streamed frame and notice when the track is lost.
 
-    The single biggest cause of progressive drift is that trackers happily
-    write low-quality predictions into memory during occlusion, then propagate
-    them forever.  We score every frame before it is committed.
+    **This used to be MemoryGateConfig and it used to do two jobs.**  The first
+    was memory gating: re-run a bad frame with ``commit_to_memory=False`` so it
+    never poisoned the propagator's memory.  That job is gone (task 3.4,
+    dropped 2026-08-23).  No engine we can actually use exposes the hook:
+    MatAnyone 2's ``InferenceCore.step()`` takes no ``**kwargs`` at all, and
+    SAM2Matting -- the model we chose -- has no ``step()`` whatsoever, so it
+    runs batch and this whole path is unreachable on it.  Keeping a switch that
+    silently did nothing is how a run ends up reporting "gate_rejects=47" for
+    a gate that changed no pixels.
+
+    The second job survives here because it never needed the engine's
+    cooperation: score each frame, and after ``lost_after`` consecutive bad
+    ones declare the track lost so the pipeline can re-seed.  That is what
+    these settings now control, and the name says so.
+
+    Old configs keying this as ``memory_gate`` still load -- see CONFIG_SECTIONS.
     """
     enabled: bool = True
     # Reject if mask area changes by more than this factor vs the running median.
@@ -235,11 +257,20 @@ class DecontamConfig:
     """
     enabled: bool = True
     regularization: float = 1e-5
-    # Upstream's published defaults are 10/2. Measured on a synthetic
-    # composite with known F and B, 10/2 leaves ~62% of the fringe error;
-    # 20/3 leaves ~40% and costs 0.72s vs 0.52s per 1080p frame. The
-    # solver converges (0.3% error at 120/30) -- this is purely a
-    # speed/accuracy dial, not a correctness limit.
+    # Speed/accuracy dial, not a correctness limit. Upstream's defaults are
+    # 10/2. Re-measured 2026-08-24 on the committed fixture in
+    # tests/test_decontamination.py, as fraction of the fringe error left:
+    #
+    #     10/2   37.6%      20/3   17.5%      40/5   9.0%      120/30  8.4%
+    #
+    # so the solver is converged by about 40/5. An earlier version of this
+    # comment quoted 62% / 40% from a synthetic that was never committed and
+    # could not be reproduced; the fixture now lives in the test suite.
+    #
+    # On real 1920x800 footage 40/5 measured 2.84s/frame against 20/3's
+    # 2.75s, i.e. roughly half the residual error for about 3% more time.
+    # Worth revisiting 20/3 -> 40/5, but absolute timings are hardware
+    # specific so re-measure before changing it.
     n_small_iterations: int = 20
     n_big_iterations: int = 3
     small_size: int = 32
@@ -256,7 +287,7 @@ class Config:
     detect: DetectConfig = field(default_factory=DetectConfig)
     seed: SeedConfig = field(default_factory=SeedConfig)
     matting: MattingConfig = field(default_factory=MattingConfig)
-    memory_gate: MemoryGateConfig = field(default_factory=MemoryGateConfig)
+    track_health: TrackHealthConfig = field(default_factory=TrackHealthConfig)
     motion: MotionConfig = field(default_factory=MotionConfig)
     reid: ReIDConfig = field(default_factory=ReIDConfig)
     refine: RefineConfig = field(default_factory=RefineConfig)
@@ -270,8 +301,30 @@ class Config:
     def to_dict(self) -> Dict[str, Any]:
         return dataclasses.asdict(self)
 
+    #: old section name -> current one, for configs written before a rename
+    RENAMED_SECTIONS = {"memory_gate": "track_health"}
+
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> "Config":
+        # A renamed section must be re-keyed BEFORE the field walk below, which
+        # only looks up current field names and would otherwise drop an old
+        # section on the floor without a word. Silently ignoring a setting the
+        # user wrote is worse than failing.
+        d = dict(d or {})
+        for old_name, new_name in cls.RENAMED_SECTIONS.items():
+            if old_name in d:
+                if new_name in d:
+                    raise ValueError(
+                        f"config sets both '{old_name}' and '{new_name}'; "
+                        f"'{old_name}' is the old name for the same section. "
+                        f"Keep one.")
+                warnings.warn(
+                    f"config section '{old_name}' was renamed to '{new_name}' "
+                    f"in task 3.4 (the memory-gating half was dropped; what "
+                    f"remains is track-health scoring). Still honoured, but "
+                    f"update the file.", DeprecationWarning, stacklevel=2)
+                d[new_name] = d.pop(old_name)
+
         kw: Dict[str, Any] = {}
         for f in dataclasses.fields(cls):
             if f.name not in d:
@@ -303,7 +356,10 @@ _SUB = {
     "detect": DetectConfig,
     "seed": SeedConfig,
     "matting": MattingConfig,
-    "memory_gate": MemoryGateConfig,
+    "track_health": TrackHealthConfig,
+    # Back-compat: configs written before 3.4 call this section memory_gate.
+    # It is accepted and mapped, so an old yaml still loads.
+    "memory_gate": TrackHealthConfig,
     "motion": MotionConfig,
     "reid": ReIDConfig,
     "refine": RefineConfig,
