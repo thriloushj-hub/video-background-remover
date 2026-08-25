@@ -54,8 +54,20 @@ INFO = EngineInfo(
     license="CC BY-NC-SA 4.0",
     commercial_ok=False,
     mode="sequence",
-    capabilities={"mask_prompt", "point_prompt", "box_prompt", "text_prompt",
-                  "per_frame_head"},
+    # NOTE 2026-08-15: "per_frame_head" was here and it was WRONG -- written
+    # from the paper, not from the object.  The real SAM3MattingVideoPredictor
+    # exposes no standalone (image, trimap) -> alpha callable; see matte_frame
+    # below.  Declaring it made the pipeline route the flow-adaptive trimap
+    # into refine.refine_band with a head that returns None, which crashed.
+    # NOTE 2026-08-16: "text_prompt" was here and it was WRONG too.  SAM 3 the
+    # model family does concept/text prompting, but the class this adapter
+    # actually drives -- SAM3MattingVideoPredictor -- has no text entry point.
+    # Its only prompt methods are add_new_mask, add_new_points and
+    # add_new_points_or_box; the sole attribute matching /text|concept|phrase/
+    # is `bf16_context`, which matches on "context".  Third paper-vs-object
+    # mismatch on this project.
+    capabilities={"mask_prompt", "point_prompt", "box_prompt",
+                  "multi_object"},
     url="https://github.com/FudanCVL/SAM2Matting",
     notes="Tracker-to-matting decoupling. SAM3 variant handles rapid motion "
           "and non-human targets. No per-frame memory control.",
@@ -78,16 +90,21 @@ class SAM2MattingEngine(MattingEngine):
                  device: str = "auto",
                  half: bool = True,
                  compiled: bool = False,
-                 repo_dir: Optional[str] = None):
+                 repo_dir: Optional[str] = None,
+                 split_seed_components: bool = True):
         self.device = resolve_device(device)
         self.half = half and self.device == "cuda"
         self.backbone = backbone.lower()
         self.checkpoint = checkpoint or _CKPTS[self.backbone]
         self.compiled = compiled
+        self.split_seed_components = split_seed_components
         self.repo_dir = repo_dir or os.environ.get(
             "SAM2MATTING_DIR", "third_party/SAM2Matting")
         self._predictor = None
         self._tmp: Optional[str] = None
+        # (T, K) fraction-of-frame per seeded subject, filled by matte()
+        self.object_areas: Optional[np.ndarray] = None
+        self._obj_area_frame: list = []
 
     # -- model -------------------------------------------------------------- #
 
@@ -162,35 +179,147 @@ class SAM2MattingEngine(MattingEngine):
 
     # -- API ---------------------------------------------------------------- #
 
+    # -- multi-object seeding ----------------------------------------------- #
+
+    @staticmethod
+    def split_objects(seed_mask: np.ndarray,
+                      min_frac: float = 0.002) -> list:
+        """Split a union seed into one mask per significant connected component.
+
+        The seed stage builds its mask by OR-ing one mask per kept person, so a
+        component in that union *is* a person (two people who physically touch
+        merge into one component, but then the tracker sees one blob anyway and
+        nothing is lost by treating it as one object).
+        """
+        hard = (np.asarray(seed_mask) > (127 if seed_mask.max() > 1.5 else 0.5))
+        n, lab, stats, _c = cv2.connectedComponentsWithStats(
+            hard.astype(np.uint8), 8)
+        thr = min_frac * hard.size
+        return [(lab == i).astype(np.uint8) * 255
+                for i in range(1, n) if stats[i, cv2.CC_STAT_AREA] >= thr]
+
+    def _alpha_union(self, alpha, n_obj: int, h: int, w: int) -> np.ndarray:
+        """Collapse a per-object alpha stack into one HxW matte.
+
+        Side effect: the per-object coverage of this frame is recorded in
+        ``self._obj_area_frame`` as one fraction-of-frame per object, BEFORE
+        the union throws that information away.  ``matte`` collects those rows
+        into ``self.object_areas``.
+
+        This exists because ``subj_lost_at`` used to be derived from the number
+        of connected components in the unioned matte, which is not the number
+        of subjects: two people standing shoulder to shoulder are one
+        component, so the metric reported a lost subject on every clip where
+        anybody touched.  Per-object area is the honest signal -- object k is
+        still tracked if object k still has area, whether or not it is fused
+        to its neighbour in the union.
+
+        ``to_alpha_2d`` cannot be used here: it walks leading dimensions with
+        ``a = a[0]``, which silently keeps only the FIRST object and discards
+        every other person.  Unknown layouts raise rather than guess -- a wrong
+        union would look exactly like a tracking failure in the metrics.
+        """
+        t = self._torch
+        x = alpha
+        if isinstance(x, t.Tensor):
+            x = x.detach().float().cpu().numpy()
+        if isinstance(x, (tuple, list)):
+            x = x[-1]
+            if isinstance(x, t.Tensor):
+                x = x.detach().float().cpu().numpy()
+        x = np.squeeze(np.asarray(x, np.float32))
+
+        if x.ndim == 2:
+            a = x
+            stack = x[None]
+        elif x.ndim == 3 and x.shape[0] == n_obj:
+            a = x.max(axis=0)
+            stack = x
+        elif x.ndim == 3 and x.shape[-1] == n_obj:
+            a = x.max(axis=-1)
+            stack = np.moveaxis(x, -1, 0)
+        else:
+            raise RuntimeError(
+                f"[sam2matting] cannot union {n_obj} objects from an alpha of "
+                f"shape {x.shape}. Refusing to guess -- a wrong union is "
+                f"indistinguishable from a tracking failure in the metrics.")
+        scale = 255.0 if a.max() > 1.5 else 1.0
+        a = np.clip(a / scale, 0.0, 1.0)
+
+        # per-object coverage, measured on the stack's own grid (the ratio is
+        # resolution independent, so no resize is needed just to count area)
+        self._obj_area_frame = [
+            float((np.clip(o / scale, 0.0, 1.0) > 0.5).mean()) for o in stack]
+
+        if a.shape != (h, w):
+            a = cv2.resize(a, (w, h), interpolation=cv2.INTER_LINEAR)
+        return a
+
+    # -- API ---------------------------------------------------------------- #
+
     def matte(self, frames: Sequence[np.ndarray],
               seed_mask: Optional[np.ndarray],
               n_warmup: int = 10,
-              progress: Optional[Callable[[int], None]] = None) -> np.ndarray:
+              progress: Optional[Callable[[int], None]] = None,
+              seed_masks: Optional[Sequence[np.ndarray]] = None) -> np.ndarray:
+        """Matte a shot.
+
+        ``seed_masks`` -- one 0/255 mask per subject -- is the honest way to
+        prompt this model when the frame holds more than one person.  Until
+        2026-08-15 this method OR-ed every kept person into a single
+        ``obj_id=1``, and on the ipman fast-motion window the tracker converged
+        onto one of the two fighters at frame 7 and never recovered the other.
+        A VOS tracker given one identity with two separate blobs will do that.
+
+        If ``seed_masks`` is not given, the union in ``seed_mask`` is split into
+        connected components (see ``split_objects``) so existing call sites get
+        the fix too.  The split is always announced, never silent.
+        """
         self._ensure()
         t = self._torch
-        if seed_mask is None:
+        if seed_mask is None and not seed_masks:
             raise ValueError("SAM2Matting needs a prompt (mask/box/point/text)")
+
+        if seed_masks:
+            objs = list(seed_masks)
+            src = "explicit"
+        elif self.split_seed_components:
+            objs = self.split_objects(seed_mask) or [seed_mask]
+            src = "auto-split"
+        else:
+            objs = [seed_mask]
+            src = "union"
+        print(f"[sam2matting] seeding {len(objs)} object(s) ({src})")
 
         d = self._materialise(frames)
         h, w = frames[0].shape[:2]
         out = np.zeros((len(frames), h, w), np.float32)
 
+        # object_areas[t][k] = fraction of frame covered by seeded subject k at
+        # frame t.  Filled by _alpha_union.  NaN marks a frame the predictor
+        # never returned (see the missing-frame handling below), so a hold is
+        # never mistaken for a measurement.
+        obj_areas = np.full((len(frames), len(objs)), np.nan, np.float32)
+        self._obj_area_frame = []
+
         try:
             state = self._predictor.init_state(video_path=d)
             self._predictor.reset_state(state)
-            self._predictor.add_new_mask(
-                inference_state=state, frame_idx=0, obj_id=1,
-                mask=self._seed_logits(seed_mask))
+            for k, m in enumerate(objs):
+                self._predictor.add_new_mask(
+                    inference_state=state, frame_idx=0, obj_id=k + 1,
+                    mask=self._seed_logits(m))
 
             autocast = t.autocast("cuda", dtype=t.bfloat16) if self.device == "cuda" \
                 else _NullCtx()
             seen = set()
             with t.inference_mode(), autocast:
                 for idx, _objs, _lg, alpha, *_ in self._predictor.propagate_in_video(state):
-                    a = to_alpha_2d(alpha)
-                    if a.shape != (h, w):
-                        a = cv2.resize(a, (w, h), interpolation=cv2.INTER_LINEAR)
+                    a = self._alpha_union(alpha, len(objs), h, w)
                     out[idx] = a
+                    row = self._obj_area_frame
+                    if len(row) == len(objs):
+                        obj_areas[int(idx)] = row
                     seen.add(int(idx))
                     if progress:
                         progress(int(idx))
@@ -212,31 +341,38 @@ class SAM2MattingEngine(MattingEngine):
         finally:
             self._cleanup()
 
+        self.object_areas = obj_areas
         assert len(out) == len(frames)
         return out
 
     def matte_frame(self, frame_bgr: np.ndarray,
                     trimap: np.ndarray) -> Optional[np.ndarray]:
-        """Progressive matting head on a single frame + trimap.
+        """Always ``None`` for SAM2Matting.  Upstream has no such head.
 
-        This is the piece that makes flow-adaptive trimap widening pay off: the
-        widened unknown band is handed to a real matting head rather than to a
-        blur.
+        This method used to look for ``matting_head`` / ``predict_alpha`` on the
+        predictor.  Introspection of the real object on an A100, 2026-08-15::
+
+            <class 'sam3.model.sam3matting_video_predictor.SAM3MattingVideoPredictor'>
+            matting_head: False | predict_alpha: False
+            attrs: ['alpha_pred1', 'alpha_pred2', 'alpha_pred3',
+                    'matting_step', 'sam_mask_decoder', ...]
+
+        Neither candidate is usable standalone.  ``matting_step`` takes ten
+        arguments -- ``frame_idx, input, is_init_cond_frame, mask_inputs,
+        current_vision_feats, current_vision_pos_embeds, feat_sizes,
+        output_dict, matting_output_dict, num_frames`` -- and is wired into the
+        predictor's per-frame memory state, so it only runs inside
+        ``propagate_in_video``.  ``alpha_pred1..3`` are ``nn.Sequential``
+        decoders over internal feature maps, not over an image plus a trimap.
+
+        Consequence for [[Motion_Blur_Fix]]: the flow-adaptive trimap cannot
+        hand its widened band to a real matting head on this engine.  It falls
+        back to the guided filter in ``refine.refine_band``, which is weaker,
+        and any write-up must say so.  Bringing in a standalone head such as
+        ViTMatte is tracked separately -- it is a new dependency and a new
+        licence question on top of CC BY-NC-SA.
         """
-        self._ensure()
-        head = getattr(self._predictor, "matting_head", None) or \
-            getattr(self._predictor, "predict_alpha", None)
-        if head is None:
-            return None
-        t = self._torch
-        rgb = np.ascontiguousarray(frame_bgr[:, :, ::-1]).astype(np.float32) / 255.0
-        with t.inference_mode():
-            a = head(t.from_numpy(rgb).permute(2, 0, 1)[None].to(self.device),
-                     t.from_numpy(trimap.astype(np.float32) / 255.0)[None, None].to(self.device))
-        a = to_alpha_2d(a)
-        if a.shape != frame_bgr.shape[:2]:
-            a = cv2.resize(a, frame_bgr.shape[1::-1], interpolation=cv2.INTER_LINEAR)
-        return a
+        return None
 
     def reset(self) -> None:
         self._cleanup()

@@ -41,7 +41,11 @@ INFO = EngineInfo(
     license="NTU S-Lab License 1.0",
     commercial_ok=False,
     mode="streaming",
-    capabilities={"mask_prompt", "permanent_memory", "memory_gate"},
+    # No memory_gate. It was declared here from the paper until the 3.2b
+    # capability audit checked the object: InferenceCore.step() takes no
+    # **kwargs, so update_memory cannot be passed at all. Task 3.4 then
+    # dropped the feature outright.
+    capabilities={"mask_prompt", "permanent_memory"},
     url="https://github.com/pq-yang/MatAnyone2",
     notes="Best-in-class human hair/fabric edges. Human-specific. Needs a "
           "first-frame mask, so SAM 3 feeds it.",
@@ -90,13 +94,13 @@ class MatAnyone2Engine(MattingEngine):
         self._supports_permanent = require_kwarg(
             self._proc.step, "force_permanent", self,
             strict=self.strict_capabilities, where="load")
-        self._supports_gate = require_kwarg(
-            self._proc.step, "update_memory", self,
-            strict=self.strict_capabilities, where="load")
-
+        # update_memory is deliberately no longer probed. It was always
+        # absent -- InferenceCore.step() takes no **kwargs -- and task 3.4
+        # dropped the feature that used it, so checking would only print a
+        # verdict on something nothing calls.
         print(f"[MatAnyone 2] capability check: "
-              f"permanent_memory={'ok' if self._supports_permanent else 'UNAVAILABLE'}, "
-              f"memory_gate={'ok' if self._supports_gate else 'UNAVAILABLE'}")
+              f"permanent_memory="
+              f"{'ok' if self._supports_permanent else 'UNAVAILABLE'}")
 
     def _img(self, frame_bgr: np.ndarray):
         """BGR HWC uint8 -> RGB CHW float tensor in [0, 1] on device."""

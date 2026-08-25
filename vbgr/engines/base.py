@@ -51,7 +51,8 @@ class EngineInfo:
     # "streaming" | "sequence"
     mode: str = "streaming"
     # {"mask_prompt","point_prompt","box_prompt","text_prompt",
-    #  "permanent_memory","memory_gate","per_frame_head","auto_human"}
+    #  "permanent_memory","per_frame_head","auto_human"}
+    # ("memory_gate" was retired with task 3.4)
     capabilities: Set[str] = field(default_factory=set)
     url: str = ""
     notes: str = ""
@@ -139,7 +140,35 @@ class MattingEngine(abc.ABC):
         return self.info.mode == "streaming"
 
     def has(self, cap: str) -> bool:
-        return cap in self.info.capabilities
+        """Does this engine really have `cap`?
+
+        ``info.capabilities`` is a *declaration*, and declarations on this
+        project have a bad record: two of the first two audited were written
+        from the paper rather than from the object (``memory_gate`` on
+        MatAnyone 2, ``per_frame_head`` on SAM2Matting).  So where a capability
+        is implemented by a kwarg, this consults the runtime check as well and
+        answers False once that kwarg has been found missing.
+
+        Caveat worth knowing: the runtime check runs at model load.  Before the
+        engine is loaded, only the declaration exists, so an early ``has()``
+        can still be optimistic.  ``verified_capabilities`` says which is which.
+        """
+        if cap not in self.info.capabilities:
+            return False
+        kw = CAPABILITY_KWARG.get(cap)
+        return True if kw is None else self.feature_active(kw)
+
+    @property
+    def verified_capabilities(self) -> Dict[str, str]:
+        """{capability: 'ok' | 'UNAVAILABLE' | 'declared, not machine-checkable'}."""
+        out = {}
+        for cap in sorted(self.info.capabilities):
+            kw = CAPABILITY_KWARG.get(cap)
+            if kw is None:
+                out[cap] = "declared, not machine-checkable"
+            else:
+                out[cap] = "ok" if self.feature_active(kw) else "UNAVAILABLE"
+        return out
 
 
 # --------------------------------------------------------------------------- #
@@ -205,12 +234,24 @@ class CapabilityError(RuntimeError):
 
 # Which config feature each risky kwarg implements. If one of these is dropped,
 # the corresponding feature is silently OFF, which is far worse than a crash:
-# the pipeline still reports gate_rejects, the ablation still produces numbers,
-# and every one of them is wrong.
+# the run still completes, the ablation still produces numbers, and every one
+# of them is wrong.
+#
+# update_memory and commit_to_memory used to live here, backing the memory
+# gate. Task 3.4 dropped that feature (2026-08-23) -- no engine we can use
+# exposes the hook -- so nothing passes those kwargs any more and listing them
+# would warn about a feature that no longer exists.
 CRITICAL_KWARGS: Dict[str, str] = {
-    "update_memory":   "memory_gate  (memory_gate.enabled)",
     "force_permanent": "permanent memory anchors  (matting.drift_anchor_warmup)",
-    "commit_to_memory": "memory_gate  (memory_gate.enabled)",
+}
+
+# Which declared capability each kwarg backs, so `MattingEngine.has` can stop
+# reporting a capability as present once its kwarg is found missing on the
+# installed API.  Capabilities absent from this map are not machine-checkable
+# from a signature and have to be verified by hand -- see the audit in
+# docs/CAPABILITY_AUDIT.md.
+CAPABILITY_KWARG: Dict[str, str] = {
+    "permanent_memory": "force_permanent",
 }
 
 _WARNED: set = set()

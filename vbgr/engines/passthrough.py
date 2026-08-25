@@ -32,7 +32,10 @@ class PassthroughEngine(MattingEngine):
         license="MIT (this repo)",
         commercial_ok=True,
         mode="streaming",
-        capabilities={"mask_prompt", "memory_gate"},
+        # memory_gate removed with task 3.4. This engine's step() still
+        # accepts commit_to_memory so the signature-check tests have something
+        # honest to bind to, but nothing in the pipeline passes it any more.
+        capabilities={"mask_prompt"},
         notes="CPU-only smoke-test engine. Not a real matter.",
     )
     info = INFO
