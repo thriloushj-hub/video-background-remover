@@ -59,3 +59,15 @@ sheets/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# --- Local session scratch (added 2026-08-25) ---
+# Things I move here rather than delete; never meant to be tracked.
+_to_delete/
+.claude/settings.local.json
+
+# --- Benchmark payload and other archives ---
+# bench_payload/ is the canonical frozen clip set (see docs/RUNBOOK_bench.md)
+# but it is ~21 MB of encoded video. The frozen LIST lives in bench/clips.txt,
+# which is tracked; the encodes are a build artifact and are not.
+bench_payload/
+*.zip
