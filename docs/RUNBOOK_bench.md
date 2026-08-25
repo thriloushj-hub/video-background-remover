@@ -4,59 +4,144 @@ Everything needed is in **`vbgr2/bench_payload/`** — four zips, ~21 MB total:
 `vbgr_code.zip`, `clips_1.zip`, `clips_2.zip`, `clips_3.zip`.
 They are already split under Colab's 10 MB per-file upload limit.
 
+**`vbgr_code.zip` was rebuilt 25 Aug** and matches the committed repo exactly
+(34 entries, verified file-by-file by hash). If you change any tracked source
+file, rebuild it before running or the VM will quietly run the old code.
+
 ## Why this exists as a bundle
 
 The Colab VM recycled four times on 2026-08-16 and each cycle costs a full
 setup. This packages the whole run so it goes in one pass.
 
-## Upload gotcha, learned the hard way
+## Two upload gotchas, both learned the hard way
 
-Colab's sidebar upload silently does nothing while the **"Ensure that your
-files are saved elsewhere"** warning dialog is open. Three uploads failed to
-that before I spotted it. Dismiss the dialog with **OK first**, then upload.
-Each file must be under 10 MB, which is why the clips are in three zips.
+1. **Colab's sidebar upload silently does nothing while the "Ensure that your
+   files are saved elsewhere" warning dialog is open.** Three uploads reported
+   success and never appeared on the VM. Dismiss the dialog with **OK first**,
+   then upload. Each file must be under 10 MB, which is why the clips are in
+   three zips.
+2. **Re-uploading a file the VM already has saves it as `vbgr_code (1).zip`.**
+   Unzipping `vbgr_code.zip` then runs the OLD code and the run looks perfectly
+   fine. Always `ls -la vbgr_code*.zip` and copy the new file over the old one
+   before unzipping. Step 4 below does this for you.
+
+Code can also go onto a VM with **zero clicks** — Colab runs Monaco and exposes
+it, so a cell's contents can be set directly with
+`monaco.editor.getModels()[i].setValue(code)`. That removes the upload step for
+code, which is the part that changes every iteration. The clips still need one
+human action per fresh VM. See `vbgr_colab_access.md`.
 
 ## Steps
 
 1. Open the v4 notebook, connect an **A100**.
+
 2. Run cells **1, 2, 2b, 3** (GPU check, install, imports, checkpoints).
    About 5 minutes on a fresh VM.
-3. Files panel -> upload, dismissing the warning dialog first:
-   `vbgr_code.zip`, `clips_1.zip`, `clips_2.zip`, `clips_3.zip`
-4. In a new cell:
 
-       !cd /content && unzip -o -q vbgr_code.zip && mkdir -p win \
+3. Files panel → upload, dismissing the warning dialog first:
+   `vbgr_code.zip`, `clips_1.zip`, `clips_2.zip`, `clips_3.zip`
+
+4. Unpack, defusing the `(1).zip` trap first:
+
+       !cd /content && ls -la vbgr_code*.zip
+       !cd /content && [ -f "vbgr_code (1).zip" ] && mv "vbgr_code (1).zip" vbgr_code.zip; \
+         unzip -o -q vbgr_code.zip && mkdir -p win \
          && unzip -o -q -d win clips_1.zip && unzip -o -q -d win clips_2.zip \
          && unzip -o -q -d win clips_3.zip && ls win | wc -l
 
    Expect `15`.
 
-5. Run it:
+5. **Run the test suite while you are here.** This is the only environment with
+   torch, so `tests/test_subject_loss.py` cannot run anywhere else — off-GPU it
+   skips and you see 75 instead of 85.
+
+       !cd /content && pip -q install pytest && python -m pytest tests/ -q
+
+   Expect **85 passed**.
+
+6. Run the benchmark:
 
        !cd /content && python vbgr_bench.py
 
-   About 8 minutes: Mask R-CNN seed plus one SAM2Matting pass per clip.
-   Add `--fix` to also run the motion-fix arm (roughly triples the time).
-   Pass clip names to run a subset: `python vbgr_bench.py 1917 butter`.
+   About 10 minutes: Mask R-CNN seed plus one SAM2Matting pass per clip, plus
+   writing the alphas. Add `--fix` to also run the motion-fix arm (roughly
+   triples the time). Pass clip names to run a subset:
+   `python vbgr_bench.py 1917 butter`.
 
-6. Results land in `/content/bench_out/bench_results.json`, with a contact
-   sheet per clip at `/content/bench_out/<clip>/sheet_off.jpg`.
+7. **Get the results off the VM before it recycles.** This is the step that has
+   been skipped twice, and it is why the 20 Aug run was nearly lost and why
+   `hole` still cannot be validated:
+
+       !cd /content && zip -q -r bench_out_results.zip bench_out && ls -la bench_out_results.zip
+       from google.colab import files; files.download('/content/bench_out_results.zip')
+
+   Roughly 35 MB. It lands in your Downloads folder. Unzip it into
+   `vbgr2/bench/results/run_<date>/`.
+
+## What you get back
+
+- `bench_out/bench_results.json` — the table, plus each clip's `object_areas`,
+  the per-subject coverage that `subj_lost_at` was computed from.
+- `bench_out/<clip>/sheet_off.jpg` — a 24-frame contact sheet per clip.
+- `bench_out/<clip>/alpha/*.png` — **new**. Every frame's alpha as an 8-bit PNG
+  at ≤960px. This is the artefact that lets a metric change be re-scored
+  without another GPU run. Structural questions survive the downscale;
+  boundary-detail ones do not, so `edge_soft` and `sharpness` must still come
+  off the full-resolution run.
 
 ## Reading the table
 
-`area_cv`, `dropouts` and `mean_area` are comparable to the v1 column.
-`edge_soft` and `sharpness` are **not** — v1's alpha is recovered from a green
-composite through `clip((d-12)/28)`, and that ramp pins sharpness to 0.654-0.673
-on every clip regardless of content. See V1_Window_Baselines.md.
+**Do not read the printed table as a v2-vs-v1 result.** `area_cv` and
+`mean_area` measure *coverage*, and v1's matte over-includes, so v2 scoring
+lower on both is neither a regression nor proof of an improvement. On the
+23 Aug run that table read as a 15/15 loss while the pictures showed the
+opposite. The runner prints this warning itself now.
+
+Score the run properly, on CPU, on your own machine:
+
+    python bench/score_disagreement.py --run bench/results/run_<date>
+
+That splits the disagreement into **halo** (v1 keying in background — v2 right
+to be smaller), **hole** (v2 tore a subject it is holding — a real defect) and
+an **excess rim width**. `halo` high with `hole` ~0 is the only shape of result
+that supports a v2-beats-v1 claim. Full reasoning in
+`Coverage_Disagreement.md`.
+
+`edge_soft` and `sharpness` are **not** comparable to the v1 column at all —
+v1's alpha is recovered from a green composite through `clip((d-12)/28)`, and
+that ramp pins sharpness to 0.654-0.673 on every clip regardless of content.
+See `V1_Window_Baselines.md`.
 
 `subj_lost_at` is the frame after which the matte stops holding all the seeded
-subjects. `never` is the pass condition, and it is the only column that
-separates a cleaner matte from a lost person.
+subjects; `never` is the pass condition. It reads the tracker's per-object
+areas, and returns `never` rather than guessing if those are unavailable.
 
-## What the runner refuses to do
+`area_cv` is kept as a *drift* diagnostic only. For instability use
+`area_jitter`, which is immune to the camera moving — butter's dolly-back
+scores `area_cv` 0.563 against `area_jitter` 0.070, and this project has read
+that clip's camera move as matte instability three separate times.
 
-It re-checks every window for shot cuts and aborts on one, because two of the
-three original windows turned out to straddle cuts and their numbers were void.
+## What the runner refuses to do, precisely
+
+`cut_guard` aborts a clip if `compute_scene_cuts` returns more than one shot
+start. It does **not** abort on a cut that was suppressed by `min_shot_len`
+(12 frames): a cut closer than that to either end of the window is dropped from
+the shot starts and only produces a printed WARNING.
+
+That is not hypothetical. On both the 20 and 23 Aug runs ipman printed:
+
+    [shots] WARNING: 1 detected cut(s) at [62] suppressed by min_shot_len=12.
+
+62 is 10 frames from the end of a 72-frame window, so it is suppressed and the
+run continues. The contact sheet shows **continuous action across frame 62** —
+same two men, same framing, mid-kick — so this looks like a false positive from
+the fast kick, the absdiff guard firing on rapid motion the way it used to fire
+on lighting ramps.
+
+**If you see that warning again, do not change `min_shot_len` or the threshold
+to silence it.** Two things are genuinely unresolved and both need deciding
+rather than tuning: whether the runner should abort on a suppressed cut, and
+whether the detector should be firing at 62 at all.
 
 ---
 
@@ -78,3 +163,6 @@ Payload wins on three counts: it is the higher-bitrate encode, it is what the
 23 Aug run on disk actually used, and this runbook already points at it. Frame
 counts and dimensions are identical between the two, and `bench/clips.txt` —
 the frozen list itself — is untouched.
+
+`bench_payload/` is gitignored (21 MB of encoded video); the frozen list it
+encodes is tracked.
