@@ -1,0 +1,303 @@
+{
+  "1917": {
+    "window": [
+      4,
+      76
+    ],
+    "frames": 72,
+    "green_bgr": [
+      151,
+      253,
+      119
+    ],
+    "bg_share": 0.791,
+    "area_cv": 0.1938,
+    "edge_soft": 0.1922,
+    "sharpness": 0.6598,
+    "dropouts": 0,
+    "mean_area": 0.3147,
+    "subjects_f0": 1,
+    "trusted": true
+  },
+  "ipman": {
+    "window": [
+      61,
+      133
+    ],
+    "frames": 72,
+    "green_bgr": [
+      151,
+      253,
+      119
+    ],
+    "bg_share": 0.885,
+    "area_cv": 0.0874,
+    "edge_soft": 0.1475,
+    "sharpness": 0.6621,
+    "dropouts": 0,
+    "mean_area": 0.2453,
+    "subjects_f0": 1,
+    "trusted": true
+  },
+  "butter": {
+    "window": [
+      4,
+      76
+    ],
+    "frames": 72,
+    "green_bgr": [
+      151,
+      253,
+      119
+    ],
+    "bg_share": 0.804,
+    "area_cv": 0.5765,
+    "edge_soft": 0.1075,
+    "sharpness": 0.673,
+    "dropouts": 0,
+    "mean_area": 0.2011,
+    "subjects_f0": 4,
+    "trusted": true
+  },
+  "dance": {
+    "window": [
+      4,
+      76
+    ],
+    "frames": 72,
+    "green_bgr": [
+      151,
+      253,
+      119
+    ],
+    "bg_share": 1.0,
+    "area_cv": 0.0989,
+    "edge_soft": 0.1042,
+    "sharpness": 0.6688,
+    "dropouts": 0,
+    "mean_area": 0.1306,
+    "subjects_f0": 3,
+    "trusted": true
+  },
+  "dance2": {
+    "window": [
+      4,
+      76
+    ],
+    "frames": 72,
+    "green_bgr": [
+      151,
+      253,
+      119
+    ],
+    "bg_share": 1.0,
+    "area_cv": 0.0588,
+    "edge_soft": 0.1456,
+    "sharpness": 0.6589,
+    "dropouts": 0,
+    "mean_area": 0.0611,
+    "subjects_f0": 1,
+    "trusted": true
+  },
+  "dance3": {
+    "window": [
+      4,
+      76
+    ],
+    "frames": 72,
+    "green_bgr": [
+      151,
+      253,
+      119
+    ],
+    "bg_share": 0.999,
+    "area_cv": 0.0428,
+    "edge_soft": 0.1252,
+    "sharpness": 0.6685,
+    "dropouts": 0,
+    "mean_area": 0.083,
+    "subjects_f0": 2,
+    "trusted": true
+  },
+  "shakira": {
+    "window": [
+      189,
+      261
+    ],
+    "frames": 72,
+    "green_bgr": [
+      151,
+      253,
+      119
+    ],
+    "bg_share": 1.0,
+    "area_cv": 0.15,
+    "edge_soft": 0.1808,
+    "sharpness": 0.6656,
+    "dropouts": 0,
+    "mean_area": 0.1536,
+    "subjects_f0": 3,
+    "trusted": true
+  },
+  "mv": null,
+  "tryguys": {
+    "window": [
+      69,
+      141
+    ],
+    "frames": 72,
+    "green_bgr": [
+      151,
+      253,
+      119
+    ],
+    "bg_share": 0.407,
+    "area_cv": 0.0103,
+    "edge_soft": 0.1845,
+    "sharpness": 0.6646,
+    "dropouts": 0,
+    "mean_area": 0.6267,
+    "subjects_f0": 2,
+    "trusted": true
+  },
+  "codylexi": {
+    "window": [
+      4,
+      76
+    ],
+    "frames": 72,
+    "green_bgr": [
+      151,
+      253,
+      119
+    ],
+    "bg_share": 0.748,
+    "area_cv": 0.0116,
+    "edge_soft": 0.1841,
+    "sharpness": 0.6607,
+    "dropouts": 0,
+    "mean_area": 0.4812,
+    "subjects_f0": 1,
+    "trusted": true
+  },
+  "asianboss2": {
+    "window": [
+      4,
+      76
+    ],
+    "frames": 72,
+    "green_bgr": [
+      151,
+      253,
+      119
+    ],
+    "bg_share": 0.855,
+    "area_cv": 0.0112,
+    "edge_soft": 0.1557,
+    "sharpness": 0.6676,
+    "dropouts": 0,
+    "mean_area": 0.2777,
+    "subjects_f0": 1,
+    "trusted": true
+  },
+  "microsoft": {
+    "window": [
+      249,
+      321
+    ],
+    "frames": 72,
+    "green_bgr": [
+      151,
+      253,
+      119
+    ],
+    "bg_share": 0.604,
+    "area_cv": 0.0026,
+    "edge_soft": 0.1628,
+    "sharpness": 0.6544,
+    "dropouts": 0,
+    "mean_area": 0.3937,
+    "subjects_f0": 2,
+    "trusted": true
+  },
+  "interview": {
+    "window": [
+      262,
+      334
+    ],
+    "frames": 72,
+    "green_bgr": [
+      151,
+      253,
+      119
+    ],
+    "bg_share": 0.662,
+    "area_cv": 0.0135,
+    "edge_soft": 0.2078,
+    "sharpness": 0.6565,
+    "dropouts": 0,
+    "mean_area": 0.4787,
+    "subjects_f0": 2,
+    "trusted": true
+  },
+  "jensen": {
+    "window": [
+      4,
+      76
+    ],
+    "frames": 72,
+    "green_bgr": [
+      151,
+      253,
+      119
+    ],
+    "bg_share": 0.903,
+    "area_cv": 0.0174,
+    "edge_soft": 0.14,
+    "sharpness": 0.6551,
+    "dropouts": 0,
+    "mean_area": 0.2495,
+    "subjects_f0": 1,
+    "trusted": true
+  },
+  "eddie": {
+    "window": [
+      67,
+      139
+    ],
+    "frames": 72,
+    "green_bgr": [
+      151,
+      253,
+      119
+    ],
+    "bg_share": 0.622,
+    "area_cv": 0.0166,
+    "edge_soft": 0.1967,
+    "sharpness": 0.6565,
+    "dropouts": 0,
+    "mean_area": 0.3836,
+    "subjects_f0": 1,
+    "trusted": true
+  },
+  "leo": {
+    "window": [
+      4,
+      76
+    ],
+    "frames": 72,
+    "green_bgr": [
+      151,
+      253,
+      119
+    ],
+    "bg_share": 0.971,
+    "area_cv": 0.1184,
+    "edge_soft": 0.1217,
+    "sharpness": 0.6619,
+    "dropouts": 0,
+    "mean_area": 0.1166,
+    "subjects_f0": 1,
+    "trusted": true
+  }
+}

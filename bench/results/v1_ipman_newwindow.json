@@ -1,0 +1,28 @@
+{
+  "run": "v1_sam3_matanyone2",
+  "alpha_from": "green",
+  "green_key_bgr": [151, 253, 119],
+  "note": "v1 baseline for the NEW ipman window (source frames 318-389, 13.25-16.25s, 72 frames). Possible for the first time because this window falls entirely inside v1's coverage of source frames 160-484 (docs/BUGS.md #1); the OLD window (source 24-95) was entirely outside it, which is why no v1 ipman row has ever existed. Offset 160 re-validated here on 5 probe frames, NCC 0.944-0.969, all agreeing. Green key detected per-run, NOT DEFAULT_GREEN: scoring these outputs with compose.DEFAULT_GREEN yields mean_area 1.0000 (everything read as subject). Metric definitions imported from bench/metrics.py. Scored at two resolutions: 400 matches the other v1 rows; native is directly comparable to the v2 SAM2Matting runs and removes the resolution half of the edge_soft incomparability caveat.",
+  "rows": [
+    {
+      "clip": "ipman",
+      "window": "source 318-389",
+      "short_side": 400,
+      "frames": 72,
+      "area_cv": 0.124,
+      "edge_soft": 0.2248,
+      "dropouts": 0,
+      "mean_area": 0.2874
+    },
+    {
+      "clip": "ipman",
+      "window": "source 318-389",
+      "short_side": null,
+      "frames": 72,
+      "area_cv": 0.124,
+      "edge_soft": 0.3792,
+      "dropouts": 0,
+      "mean_area": 0.2874
+    }
+  ]
+}

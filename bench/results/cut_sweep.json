@@ -1,0 +1,282 @@
+{
+  "1917": {
+    "frames": 724,
+    "cuts": [],
+    "longest": 724,
+    "longest_at": [
+      0,
+      724
+    ],
+    "suggested_window": [
+      4,
+      76
+    ],
+    "group": "flagged"
+  },
+  "ipman": {
+    "frames": 501,
+    "cuts": [
+      31,
+      57,
+      216,
+      254,
+      280,
+      391,
+      428,
+      452
+    ],
+    "longest": 159,
+    "longest_at": [
+      57,
+      216
+    ],
+    "suggested_window": [
+      61,
+      133
+    ],
+    "group": "flagged"
+  },
+  "butter": {
+    "frames": 382,
+    "cuts": [
+      97,
+      137,
+      162,
+      199,
+      232,
+      244,
+      271,
+      289
+    ],
+    "longest": 97,
+    "longest_at": [
+      0,
+      97
+    ],
+    "suggested_window": [
+      4,
+      76
+    ],
+    "group": "flagged"
+  },
+  "dance": {
+    "frames": 363,
+    "cuts": [
+      322
+    ],
+    "longest": 322,
+    "longest_at": [
+      0,
+      322
+    ],
+    "suggested_window": [
+      4,
+      76
+    ],
+    "group": "fast motion"
+  },
+  "dance2": {
+    "frames": 607,
+    "cuts": [],
+    "longest": 607,
+    "longest_at": [
+      0,
+      607
+    ],
+    "suggested_window": [
+      4,
+      76
+    ],
+    "group": "fast motion"
+  },
+  "dance3": {
+    "frames": 619,
+    "cuts": [],
+    "longest": 619,
+    "longest_at": [
+      0,
+      619
+    ],
+    "suggested_window": [
+      4,
+      76
+    ],
+    "group": "fast motion"
+  },
+  "shakira": {
+    "frames": 369,
+    "cuts": [
+      93,
+      185,
+      353
+    ],
+    "longest": 168,
+    "longest_at": [
+      185,
+      353
+    ],
+    "suggested_window": [
+      189,
+      261
+    ],
+    "group": "fast motion"
+  },
+  "mv": {
+    "frames": 588,
+    "cuts": [
+      17,
+      54,
+      80,
+      109,
+      121,
+      146,
+      172,
+      225,
+      252,
+      283,
+      306,
+      340,
+      362,
+      391,
+      406,
+      422,
+      441,
+      457,
+      481,
+      506,
+      535,
+      563
+    ],
+    "longest": 53,
+    "longest_at": [
+      172,
+      225
+    ],
+    "suggested_window": null,
+    "group": "fast motion"
+  },
+  "tryguys": {
+    "frames": 250,
+    "cuts": [
+      65,
+      149,
+      186
+    ],
+    "longest": 84,
+    "longest_at": [
+      65,
+      149
+    ],
+    "suggested_window": [
+      69,
+      141
+    ],
+    "group": "multi-person"
+  },
+  "codylexi": {
+    "frames": 490,
+    "cuts": [],
+    "longest": 490,
+    "longest_at": [
+      0,
+      490
+    ],
+    "suggested_window": [
+      4,
+      76
+    ],
+    "group": "multi-person"
+  },
+  "asianboss2": {
+    "frames": 354,
+    "cuts": [],
+    "longest": 354,
+    "longest_at": [
+      0,
+      354
+    ],
+    "suggested_window": [
+      4,
+      76
+    ],
+    "group": "multi-person"
+  },
+  "microsoft": {
+    "frames": 567,
+    "cuts": [
+      245
+    ],
+    "longest": 322,
+    "longest_at": [
+      245,
+      567
+    ],
+    "suggested_window": [
+      249,
+      321
+    ],
+    "group": "control"
+  },
+  "interview": {
+    "frames": 642,
+    "cuts": [
+      65,
+      258,
+      573
+    ],
+    "longest": 315,
+    "longest_at": [
+      258,
+      573
+    ],
+    "suggested_window": [
+      262,
+      334
+    ],
+    "group": "control"
+  },
+  "jensen": {
+    "frames": 509,
+    "cuts": [],
+    "longest": 509,
+    "longest_at": [
+      0,
+      509
+    ],
+    "suggested_window": [
+      4,
+      76
+    ],
+    "group": "control"
+  },
+  "eddie": {
+    "frames": 143,
+    "cuts": [
+      63
+    ],
+    "longest": 80,
+    "longest_at": [
+      63,
+      143
+    ],
+    "suggested_window": [
+      67,
+      139
+    ],
+    "group": "control"
+  },
+  "leo": {
+    "frames": 208,
+    "cuts": [],
+    "longest": 208,
+    "longest_at": [
+      0,
+      208
+    ],
+    "suggested_window": [
+      4,
+      76
+    ],
+    "group": "control"
+  }
+}

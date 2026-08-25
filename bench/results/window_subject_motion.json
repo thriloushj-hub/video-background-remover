@@ -1,0 +1,152 @@
+{
+  "1917": {
+    "window": [
+      4,
+      76
+    ],
+    "subject_px": 10.87,
+    "texture_in_subject": 0.965,
+    "old_subject_px": 8.14,
+    "old_texture": 0.978
+  },
+  "ipman": {
+    "window": [
+      61,
+      133
+    ],
+    "subject_px": 7.02,
+    "texture_in_subject": 0.694,
+    "old_subject_px": 6.24,
+    "old_texture": 0.686
+  },
+  "butter": {
+    "window": [
+      4,
+      76
+    ],
+    "subject_px": 16.19,
+    "texture_in_subject": 0.799,
+    "old_subject_px": 12.5,
+    "old_texture": 0.335
+  },
+  "dance": {
+    "window": [
+      4,
+      76
+    ],
+    "subject_px": 10.47,
+    "texture_in_subject": 0.962,
+    "old_subject_px": 6.4,
+    "old_texture": 0.483
+  },
+  "dance2": {
+    "window": [
+      4,
+      76
+    ],
+    "subject_px": 13.41,
+    "texture_in_subject": 0.933,
+    "old_subject_px": 3.42,
+    "old_texture": 0.726
+  },
+  "dance3": {
+    "window": [
+      4,
+      76
+    ],
+    "subject_px": 8.98,
+    "texture_in_subject": 0.949,
+    "old_subject_px": 5.45,
+    "old_texture": 0.654
+  },
+  "shakira": {
+    "window": [
+      189,
+      261
+    ],
+    "subject_px": 17.53,
+    "texture_in_subject": 0.892,
+    "old_subject_px": 9.94,
+    "old_texture": 0.303
+  },
+  "tryguys": {
+    "window": [
+      69,
+      141
+    ],
+    "subject_px": 3.79,
+    "texture_in_subject": 0.931,
+    "old_subject_px": 3.01,
+    "old_texture": 0.67
+  },
+  "codylexi": {
+    "window": [
+      4,
+      76
+    ],
+    "subject_px": 2.52,
+    "texture_in_subject": 0.755,
+    "old_subject_px": 2.04,
+    "old_texture": 0.441
+  },
+  "asianboss2": {
+    "window": [
+      4,
+      76
+    ],
+    "subject_px": 1.92,
+    "texture_in_subject": 0.977,
+    "old_subject_px": 1.16,
+    "old_texture": 0.893
+  },
+  "microsoft": {
+    "window": [
+      249,
+      321
+    ],
+    "subject_px": 1.77,
+    "texture_in_subject": 0.532,
+    "old_subject_px": 0.87,
+    "old_texture": 0.507
+  },
+  "interview": {
+    "window": [
+      262,
+      334
+    ],
+    "subject_px": 1.98,
+    "texture_in_subject": 0.72,
+    "old_subject_px": 1.83,
+    "old_texture": 0.74
+  },
+  "jensen": {
+    "window": [
+      4,
+      76
+    ],
+    "subject_px": 4.25,
+    "texture_in_subject": 0.834,
+    "old_subject_px": 1.15,
+    "old_texture": 0.88
+  },
+  "eddie": {
+    "window": [
+      67,
+      139
+    ],
+    "subject_px": 2.84,
+    "texture_in_subject": 0.736,
+    "old_subject_px": 2.16,
+    "old_texture": 0.428
+  },
+  "leo": {
+    "window": [
+      4,
+      76
+    ],
+    "subject_px": 4.08,
+    "texture_in_subject": 0.347,
+    "old_subject_px": 2.07,
+    "old_texture": 0.786
+  }
+}
