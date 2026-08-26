@@ -110,5 +110,14 @@
     "ncc_best": 0.9965,
     "ncc_at_start": 0.9965,
     "verdict": "aligned"
+  },
+  "ipman": {
+    "window_start": 61,
+    "best_match": 96,
+    "offset": 35,
+    "ncc_best": 0.6209,
+    "ncc_at_start": -0.1861,
+    "verdict": "MISALIGNED",
+    "note": "Measured 2026-08-26 before the row was voided, kept as the evidence. The window clip is source frames 61-133 (mean NCC 0.9998 against source[61:133], 0.1309 against source[318:390]); v1's matte covers only source 160-484, so this window is outside v1's coverage and no frame of the matte can match it -- the 0.62 peak at 96 is spurious. Every other clip scores 0.867-0.997 at its recorded start. The row is now voided in v1_window_baselines.json, so later runs of the checker skip ipman rather than re-deriving this."
   }
 }
