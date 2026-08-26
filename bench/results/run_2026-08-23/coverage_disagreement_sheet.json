@@ -156,7 +156,5 @@
       "verdict": "agree"
     }
   },
-  "skipped": {
-    "ipman": "v1 baseline is voided -- see its note in v1_window_baselines.json"
-  }
+  "skipped": {}
 }
