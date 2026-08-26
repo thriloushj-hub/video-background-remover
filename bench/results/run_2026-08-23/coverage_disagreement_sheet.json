@@ -12,17 +12,6 @@
       "area_jitter_v2": 0.0416,
       "verdict": "agree"
     },
-    "ipman": {
-      "halo_frac": 0.7845,
-      "hole_frac": 0.0418,
-      "hole_big": 0.0071,
-      "excess_frac": 0.4378,
-      "excess_rim_px": 5.98,
-      "area_cv_v1": 0.0894,
-      "area_cv_v2": 0.0902,
-      "area_jitter_v2": 0.0326,
-      "verdict": "v1 over-inclusive"
-    },
     "butter": {
       "halo_frac": 0.5099,
       "hole_frac": 0.0045,
@@ -167,5 +156,7 @@
       "verdict": "agree"
     }
   },
-  "skipped": {}
+  "skipped": {
+    "ipman": "v1 baseline is voided -- see its note in v1_window_baselines.json"
+  }
 }

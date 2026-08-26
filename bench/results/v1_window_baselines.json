@@ -20,24 +20,22 @@
     "trusted": true
   },
   "ipman": {
-    "window": [
-      61,
-      133
-    ],
+    "window": null,
     "frames": 72,
     "green_bgr": [
       151,
       253,
       119
     ],
-    "bg_share": 0.885,
-    "area_cv": 0.0874,
-    "edge_soft": 0.1475,
-    "sharpness": 0.6621,
-    "dropouts": 0,
-    "mean_area": 0.2453,
-    "subjects_f0": 1,
-    "trusted": true
+    "bg_share": null,
+    "area_cv": null,
+    "edge_soft": null,
+    "sharpness": null,
+    "dropouts": null,
+    "mean_area": null,
+    "subjects_f0": null,
+    "trusted": false,
+    "note": "VOIDED 2026-08-26. There is no valid v1 baseline for the ipman window clip in bench_payload, and there cannot be one. bench_payload/ipman_w61_133.mp4 is source frames 61-133 (verified: mean NCC 0.9998 against source[61:133], 0.13 against source[318:390]). v1's matte covers only source 160-484 of 501 (docs/BUGS.md #1), so this window lies entirely outside v1's coverage. The previous row -- window [61,133), mean_area 0.2453, area_cv 0.0874, subjects_f0 1 -- read those indices as MATTE frames, which is v1 output for roughly source 221-293: a close-up of one fighter, not the wide two-shot the window clip contains. Every ipman v1-vs-v2 comparison made between 16 and 26 Aug compared different shots, including the 23 Aug conclusion that v1's coverage was inflated on this clip. The fix is to re-cut the window, not to patch this row: the validated replacement window is source 318-389 (13.25-16.25s), which does fall inside v1's coverage, and its baseline already exists in v1_ipman_newwindow.json (mean_area 0.2874, area_cv 0.1240, offset re-validated on 5 probes, NCC 0.944-0.969). Until bench_payload carries that clip, ipman has no row. Detected by bench/check_window_alignment.py, which scores -0.144 NCC here against 0.87-1.00 on all fourteen aligned clips."
   },
   "butter": {
     "window": [

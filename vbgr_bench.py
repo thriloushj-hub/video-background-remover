@@ -309,7 +309,9 @@ def main():
             "Refusing to run: a v2 column with no v1 column proves nothing.")
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     do_fix = "--fix" in sys.argv
-    clips = args or [c for c in V1 if V1[c]]
+    clips = args or [c for c in V1
+                     if V1[c] and V1[c].get("trusted", True)
+                     and V1[c].get("window") is not None]
     os.makedirs(WORK, exist_ok=True)
 
     import torchvision
@@ -325,6 +327,11 @@ def main():
         v1 = V1.get(nm)
         if not v1:
             print(f"{nm}: no v1 window baseline, skipping"); continue
+        if not v1.get("trusted", True) or v1.get("window") is None:
+            # Voided, not missing.  Running it would produce a v2 column with
+            # nothing valid beside it, which is how ipman's rows went wrong.
+            print(f"{nm}: v1 baseline VOIDED -- see the note in "
+                  f"v1_window_baselines.json. Skipping."); continue
         cand = [f for f in os.listdir(WIN) if f.startswith(nm + "_w")]
         if not cand:
             print(f"{nm}: no window clip in {WIN}, skipping"); continue

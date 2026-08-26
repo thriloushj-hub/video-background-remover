@@ -1,0 +1,114 @@
+{
+  "asianboss2": {
+    "window_start": 4,
+    "best_match": 4,
+    "offset": 0,
+    "ncc_best": 0.9895,
+    "ncc_at_start": 0.9895,
+    "verdict": "aligned"
+  },
+  "microsoft": {
+    "window_start": 249,
+    "best_match": 249,
+    "offset": 0,
+    "ncc_best": 0.9933,
+    "ncc_at_start": 0.9933,
+    "verdict": "aligned"
+  },
+  "eddie": {
+    "window_start": 67,
+    "best_match": 67,
+    "offset": 0,
+    "ncc_best": 0.9706,
+    "ncc_at_start": 0.9706,
+    "verdict": "aligned"
+  },
+  "leo": {
+    "window_start": 4,
+    "best_match": 4,
+    "offset": 0,
+    "ncc_best": 0.8981,
+    "ncc_at_start": 0.8981,
+    "verdict": "aligned"
+  },
+  "interview": {
+    "window_start": 262,
+    "best_match": 262,
+    "offset": 0,
+    "ncc_best": 0.9966,
+    "ncc_at_start": 0.9966,
+    "verdict": "aligned"
+  },
+  "jensen": {
+    "window_start": 4,
+    "best_match": 4,
+    "offset": 0,
+    "ncc_best": 0.9847,
+    "ncc_at_start": 0.9847,
+    "verdict": "aligned"
+  },
+  "1917": {
+    "window_start": 4,
+    "best_match": 4,
+    "offset": 0,
+    "ncc_best": 0.978,
+    "ncc_at_start": 0.978,
+    "verdict": "aligned"
+  },
+  "butter": {
+    "window_start": 4,
+    "best_match": 4,
+    "offset": 0,
+    "ncc_best": 0.9815,
+    "ncc_at_start": 0.9815,
+    "verdict": "aligned"
+  },
+  "dance": {
+    "window_start": 4,
+    "best_match": 4,
+    "offset": 0,
+    "ncc_best": 0.9764,
+    "ncc_at_start": 0.9764,
+    "verdict": "aligned"
+  },
+  "dance2": {
+    "window_start": 4,
+    "best_match": 4,
+    "offset": 0,
+    "ncc_best": 0.8674,
+    "ncc_at_start": 0.8674,
+    "verdict": "aligned"
+  },
+  "dance3": {
+    "window_start": 4,
+    "best_match": 4,
+    "offset": 0,
+    "ncc_best": 0.98,
+    "ncc_at_start": 0.98,
+    "verdict": "aligned"
+  },
+  "shakira": {
+    "window_start": 189,
+    "best_match": 189,
+    "offset": 0,
+    "ncc_best": 0.9549,
+    "ncc_at_start": 0.9549,
+    "verdict": "aligned"
+  },
+  "tryguys": {
+    "window_start": 69,
+    "best_match": 69,
+    "offset": 0,
+    "ncc_best": 0.9946,
+    "ncc_at_start": 0.9946,
+    "verdict": "aligned"
+  },
+  "codylexi": {
+    "window_start": 4,
+    "best_match": 4,
+    "offset": 0,
+    "ncc_best": 0.9965,
+    "ncc_at_start": 0.9965,
+    "verdict": "aligned"
+  }
+}

@@ -142,6 +142,14 @@ def main():
         d = os.path.join(root, clip)
         if not os.path.isdir(d):
             continue
+        # A voided baseline is not a missing one. ipman's window clip lies
+        # outside v1's matte coverage entirely, so there is nothing to compare
+        # against and a row here would be a comparison of different footage --
+        # which is exactly what went unnoticed from 16 to 26 Aug.
+        if not v.get("trusted", True) or v.get("window") is None:
+            skipped[clip] = ("v1 baseline is voided -- see its note in "
+                             "v1_window_baselines.json")
+            continue
         ignore = None
         if a.source == "alpha":
             A2 = alphas_from_dir(os.path.join(d, "alpha"))
