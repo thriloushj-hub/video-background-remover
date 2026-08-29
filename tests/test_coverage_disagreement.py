@@ -189,3 +189,37 @@ def test_enclosure_test_does_not_reject_a_real_tear():
     run = base.copy()
     run[:, 95:105] = 0.0
     assert coverage_disagreement(frames(base), frames(run))["hole_big"] > 0.05
+
+
+def test_a_band_along_the_frame_border_is_not_a_tear():
+    """The microsoft false positive, 2026-08-27.
+
+    v1's matte runs to the bottom of frame and v2's stops a few pixels short.
+    The closing disk spans that strip, so it lands in hole_frac -- and because
+    cv2.dilate clips at the image edge, its rim used to consist only of the
+    inward side, which is run foreground, so it scored as fully enclosed.
+    microsoft is the control clip: both subjects are held cleanly for all 72
+    frames and the only red in the picture is that border strip.
+    """
+    base = np.zeros((H, W), np.float32)
+    base[40:, 40:160] = 1.0          # subject running off the bottom of frame
+    run = base.copy()
+    run[H - 6:, :] = 0.0             # v2 stops 6px short of the border
+    d = coverage_disagreement(frames(base), frames(run))
+    assert d["hole_frac"] > 0.01     # the strip is still counted as coverage
+    assert d["hole_big"] < 0.005     # but it is not a tear
+
+
+def test_a_real_tear_that_reaches_the_frame_edge_still_fires():
+    """The border rule must not become a blanket exemption.
+
+    Rejecting every border-touching component would hide a genuine tear that
+    happens to run off the edge -- so enclosure is measured against a padded
+    background instead.  A full-height slit is bounded by foreground down both
+    long sides and by border across two short ones, and must still fire.
+    """
+    base = disc(100, 100, 60)
+    base[:, 90:110] = 1.0            # subject spans the full frame height
+    run = base.copy()
+    run[:, 95:105] = 0.0
+    assert coverage_disagreement(frames(base), frames(run))["hole_big"] > 0.05

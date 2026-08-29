@@ -309,6 +309,7 @@ def coverage_disagreement(base_alphas: Sequence[np.ndarray],
                           close_frac: float = 0.04,
                           min_comp_frac: float = 0.005,
                           enclosure_min: float = 0.8,
+                          border_max: float = 0.25,
                           ignore: Optional[np.ndarray] = None
                           ) -> Dict[str, float]:
     """Decompose ``base``-minus-``run`` coverage into halo, hole and excess.
@@ -329,7 +330,11 @@ def coverage_disagreement(base_alphas: Sequence[np.ndarray],
                      foreground.  Speckle fails the first test; a shell of
                      baseline halo hugging the run's silhouette fails the
                      second -- that shell is bounded by foreground on one side
-                     only, a tear is bounded on both.  On the 23 Aug sheets
+                     only, a tear is bounded on both.  A component whose rim
+                     is more than ``border_max`` frame edge is rejected too: a
+                     strip along the bottom of frame is bounded by foreground
+                     on its one visible side and would otherwise score as
+                     fully enclosed.  On the 23 Aug sheets
                      this is what separates ipman (0.032 raw, 0.007 enclosed,
                      and the sheet shows no tear) from interview (0.035 raw,
                      0.035 enclosed, and the sheet shows the tear).
@@ -384,11 +389,37 @@ def coverage_disagreement(base_alphas: Sequence[np.ndarray],
         for j in range(1, n):
             if st[j, 4] < min_comp_frac * area:
                 continue
-            comp = (lab == j).astype(np.uint8)
+            # The rim is measured on a 1px pad so the image edge is visible
+            # rather than silently clipped away by cv2.dilate, then split:
+            # enclosure is judged on the interior rim only, and a separate cap
+            # rejects a component whose rim is mostly frame border.
+            #
+            # Why both: a strip lying along the bottom of frame presents an
+            # inward rim that is entirely run foreground, so on the interior
+            # test alone it reads as fully enclosed -- that is what scored the
+            # microsoft control at hole_big 0.030 on 2026-08-27, where the
+            # picture showed a few-pixel band under both subjects and no hole
+            # in anybody. But simply rejecting every border-touching component
+            # deletes interview's real tear, which runs down the woman's face
+            # and out of the bottom of frame: that dropped hole_big 0.061 ->
+            # 0.017 and read the one true defect in the set as clean.
+            #
+            # Measured on this run, border_share separates them by more than
+            # 2x in both directions: microsoft 0.42-0.43 and butter's bottom
+            # strips 0.37-0.42, against interview's real tear at 0.156-0.165.
+            # 0.25 sits in the gap.
+            comp = np.pad((lab == j).astype(np.uint8), 1)
+            fg_pad = np.pad(fg_near.astype(np.uint8), 1) > 0
+            in_img = np.pad(np.ones(hm.shape, np.uint8), 1) > 0
             rim = (cv2.dilate(comp, cross) > 0) & (comp == 0)
             if not rim.any():
                 continue
-            if float((rim & fg_near).sum()) / float(rim.sum()) >= enclosure_min:
+            if float((rim & ~in_img).sum()) / float(rim.sum()) > border_max:
+                continue
+            interior = rim & in_img
+            if not interior.any():
+                continue
+            if float((interior & fg_pad).sum()) / float(interior.sum()) >= enclosure_min:
                 big += float(st[j, 4])
     if tot == 0:
         return dict(halo_frac=0.0, hole_frac=0.0, hole_big=0.0,
