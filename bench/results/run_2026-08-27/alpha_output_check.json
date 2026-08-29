@@ -1,0 +1,317 @@
+{
+ "1917": {
+  "frames_written": 12,
+  "frames_decoded": 12,
+  "codec": "vp9",
+  "pix_fmt": "yuv420p",
+  "alpha_mode": "1",
+  "bg_alpha_mean": 3e-05,
+  "bg_alpha_p99": 0.0,
+  "alpha_corr": 1.0,
+  "alpha_mae": 0.00019,
+  "bg_dist_from_v1_green": 110.3,
+  "size_kb": 990.4,
+  "path": "/sessions/rcw-01pqdsnwxe9x5xfzrva7p2au/scratch/alpha_check/1917_transparent.webm",
+  "verdicts": {
+   "alpha-capable stream": true,
+   "background decodes transparent": true,
+   "alpha shape survives": true,
+   "not a green key": true,
+   "frame count preserved": true
+  }
+ },
+ "asianboss2": {
+  "frames_written": 8,
+  "frames_decoded": 8,
+  "codec": "vp9",
+  "pix_fmt": "yuv420p",
+  "alpha_mode": "1",
+  "bg_alpha_mean": 1e-05,
+  "bg_alpha_p99": 0.0,
+  "alpha_corr": 1.0,
+  "alpha_mae": 0.00019,
+  "bg_dist_from_v1_green": 153.1,
+  "size_kb": 639.0,
+  "path": "/sessions/rcw-01pqdsnwxe9x5xfzrva7p2au/scratch/alpha_check/asianboss2_transparent.webm",
+  "verdicts": {
+   "alpha-capable stream": true,
+   "background decodes transparent": true,
+   "alpha shape survives": true,
+   "not a green key": true,
+   "frame count preserved": true
+  }
+ },
+ "butter": {
+  "frames_written": 8,
+  "frames_decoded": 8,
+  "codec": "vp9",
+  "pix_fmt": "yuv420p",
+  "alpha_mode": "1",
+  "bg_alpha_mean": 3e-05,
+  "bg_alpha_p99": 0.0,
+  "alpha_corr": 1.0,
+  "alpha_mae": 0.00021,
+  "bg_dist_from_v1_green": 168.0,
+  "size_kb": 330.4,
+  "path": "/sessions/rcw-01pqdsnwxe9x5xfzrva7p2au/scratch/alpha_check/butter_transparent.webm",
+  "verdicts": {
+   "alpha-capable stream": true,
+   "background decodes transparent": true,
+   "alpha shape survives": true,
+   "not a green key": true,
+   "frame count preserved": true
+  }
+ },
+ "codylexi": {
+  "frames_written": 8,
+  "frames_decoded": 8,
+  "codec": "vp9",
+  "pix_fmt": "yuv420p",
+  "alpha_mode": "1",
+  "bg_alpha_mean": 4e-05,
+  "bg_alpha_p99": 0.0,
+  "alpha_corr": 1.0,
+  "alpha_mae": 0.00022,
+  "bg_dist_from_v1_green": 101.4,
+  "size_kb": 370.7,
+  "path": "/sessions/rcw-01pqdsnwxe9x5xfzrva7p2au/scratch/alpha_check/codylexi_transparent.webm",
+  "verdicts": {
+   "alpha-capable stream": true,
+   "background decodes transparent": true,
+   "alpha shape survives": true,
+   "not a green key": true,
+   "frame count preserved": true
+  }
+ },
+ "dance": {
+  "frames_written": 8,
+  "frames_decoded": 8,
+  "codec": "vp9",
+  "pix_fmt": "yuv420p",
+  "alpha_mode": "1",
+  "bg_alpha_mean": 2e-05,
+  "bg_alpha_p99": 0.0,
+  "alpha_corr": 1.0,
+  "alpha_mae": 0.00017,
+  "bg_dist_from_v1_green": 126.6,
+  "size_kb": 509.8,
+  "path": "/sessions/rcw-01pqdsnwxe9x5xfzrva7p2au/scratch/alpha_check/dance_transparent.webm",
+  "verdicts": {
+   "alpha-capable stream": true,
+   "background decodes transparent": true,
+   "alpha shape survives": true,
+   "not a green key": true,
+   "frame count preserved": true
+  }
+ },
+ "dance2": {
+  "frames_written": 8,
+  "frames_decoded": 8,
+  "codec": "vp9",
+  "pix_fmt": "yuv420p",
+  "alpha_mode": "1",
+  "bg_alpha_mean": 1e-05,
+  "bg_alpha_p99": 0.0,
+  "alpha_corr": 1.0,
+  "alpha_mae": 7e-05,
+  "bg_dist_from_v1_green": 197.4,
+  "size_kb": 499.4,
+  "path": "/sessions/rcw-01pqdsnwxe9x5xfzrva7p2au/scratch/alpha_check/dance2_transparent.webm",
+  "verdicts": {
+   "alpha-capable stream": true,
+   "background decodes transparent": true,
+   "alpha shape survives": true,
+   "not a green key": true,
+   "frame count preserved": true
+  }
+ },
+ "dance3": {
+  "frames_written": 8,
+  "frames_decoded": 8,
+  "codec": "vp9",
+  "pix_fmt": "yuv420p",
+  "alpha_mode": "1",
+  "bg_alpha_mean": 2e-05,
+  "bg_alpha_p99": 0.0,
+  "alpha_corr": 0.99999,
+  "alpha_mae": 0.00013,
+  "bg_dist_from_v1_green": 132.7,
+  "size_kb": 546.6,
+  "path": "/sessions/rcw-01pqdsnwxe9x5xfzrva7p2au/scratch/alpha_check/dance3_transparent.webm",
+  "verdicts": {
+   "alpha-capable stream": true,
+   "background decodes transparent": true,
+   "alpha shape survives": true,
+   "not a green key": true,
+   "frame count preserved": true
+  }
+ },
+ "eddie": {
+  "frames_written": 8,
+  "frames_decoded": 8,
+  "codec": "vp9",
+  "pix_fmt": "yuv420p",
+  "alpha_mode": "1",
+  "bg_alpha_mean": 3e-05,
+  "bg_alpha_p99": 0.0,
+  "alpha_corr": 1.0,
+  "alpha_mae": 0.0007,
+  "bg_dist_from_v1_green": 239.3,
+  "size_kb": 177.7,
+  "path": "/sessions/rcw-01pqdsnwxe9x5xfzrva7p2au/scratch/alpha_check/eddie_transparent.webm",
+  "verdicts": {
+   "alpha-capable stream": true,
+   "background decodes transparent": true,
+   "alpha shape survives": true,
+   "not a green key": true,
+   "frame count preserved": true
+  }
+ },
+ "interview": {
+  "frames_written": 8,
+  "frames_decoded": 8,
+  "codec": "vp9",
+  "pix_fmt": "yuv420p",
+  "alpha_mode": "1",
+  "bg_alpha_mean": 6e-05,
+  "bg_alpha_p99": 0.00392,
+  "alpha_corr": 1.0,
+  "alpha_mae": 0.00028,
+  "bg_dist_from_v1_green": 141.0,
+  "size_kb": 403.1,
+  "path": "/sessions/rcw-01pqdsnwxe9x5xfzrva7p2au/scratch/alpha_check/interview_transparent.webm",
+  "verdicts": {
+   "alpha-capable stream": true,
+   "background decodes transparent": true,
+   "alpha shape survives": true,
+   "not a green key": true,
+   "frame count preserved": true
+  }
+ },
+ "ipman": {
+  "frames_written": 8,
+  "frames_decoded": 8,
+  "codec": "vp9",
+  "pix_fmt": "yuv420p",
+  "alpha_mode": "1",
+  "bg_alpha_mean": 3e-05,
+  "bg_alpha_p99": 0.0,
+  "alpha_corr": 1.0,
+  "alpha_mae": 0.00018,
+  "bg_dist_from_v1_green": 277.0,
+  "size_kb": 376.7,
+  "path": "/sessions/rcw-01pqdsnwxe9x5xfzrva7p2au/scratch/alpha_check/ipman_transparent.webm",
+  "verdicts": {
+   "alpha-capable stream": true,
+   "background decodes transparent": true,
+   "alpha shape survives": true,
+   "not a green key": true,
+   "frame count preserved": true
+  }
+ },
+ "jensen": {
+  "frames_written": 8,
+  "frames_decoded": 8,
+  "codec": "vp9",
+  "pix_fmt": "yuv420p",
+  "alpha_mode": "1",
+  "bg_alpha_mean": 1e-05,
+  "bg_alpha_p99": 0.0,
+  "alpha_corr": 1.0,
+  "alpha_mae": 7e-05,
+  "bg_dist_from_v1_green": 186.3,
+  "size_kb": 331.5,
+  "path": "/sessions/rcw-01pqdsnwxe9x5xfzrva7p2au/scratch/alpha_check/jensen_transparent.webm",
+  "verdicts": {
+   "alpha-capable stream": true,
+   "background decodes transparent": true,
+   "alpha shape survives": true,
+   "not a green key": true,
+   "frame count preserved": true
+  }
+ },
+ "leo": {
+  "frames_written": 8,
+  "frames_decoded": 8,
+  "codec": "vp9",
+  "pix_fmt": "yuv420p",
+  "alpha_mode": "1",
+  "bg_alpha_mean": 1e-05,
+  "bg_alpha_p99": 0.0,
+  "alpha_corr": 1.0,
+  "alpha_mae": 5e-05,
+  "bg_dist_from_v1_green": 212.9,
+  "size_kb": 386.0,
+  "path": "/sessions/rcw-01pqdsnwxe9x5xfzrva7p2au/scratch/alpha_check/leo_transparent.webm",
+  "verdicts": {
+   "alpha-capable stream": true,
+   "background decodes transparent": true,
+   "alpha shape survives": true,
+   "not a green key": true,
+   "frame count preserved": true
+  }
+ },
+ "microsoft": {
+  "frames_written": 8,
+  "frames_decoded": 8,
+  "codec": "vp9",
+  "pix_fmt": "yuv420p",
+  "alpha_mode": "1",
+  "bg_alpha_mean": 3e-05,
+  "bg_alpha_p99": 0.0,
+  "alpha_corr": 1.0,
+  "alpha_mae": 0.00018,
+  "bg_dist_from_v1_green": 133.1,
+  "size_kb": 206.1,
+  "path": "/sessions/rcw-01pqdsnwxe9x5xfzrva7p2au/scratch/alpha_check/microsoft_transparent.webm",
+  "verdicts": {
+   "alpha-capable stream": true,
+   "background decodes transparent": true,
+   "alpha shape survives": true,
+   "not a green key": true,
+   "frame count preserved": true
+  }
+ },
+ "shakira": {
+  "frames_written": 8,
+  "frames_decoded": 8,
+  "codec": "vp9",
+  "pix_fmt": "yuv420p",
+  "alpha_mode": "1",
+  "bg_alpha_mean": 2e-05,
+  "bg_alpha_p99": 0.0,
+  "alpha_corr": 0.99999,
+  "alpha_mae": 0.00018,
+  "bg_dist_from_v1_green": 141.7,
+  "size_kb": 322.3,
+  "path": "/sessions/rcw-01pqdsnwxe9x5xfzrva7p2au/scratch/alpha_check/shakira_transparent.webm",
+  "verdicts": {
+   "alpha-capable stream": true,
+   "background decodes transparent": true,
+   "alpha shape survives": true,
+   "not a green key": true,
+   "frame count preserved": true
+  }
+ },
+ "tryguys": {
+  "frames_written": 8,
+  "frames_decoded": 8,
+  "codec": "vp9",
+  "pix_fmt": "yuv420p",
+  "alpha_mode": "1",
+  "bg_alpha_mean": 6e-05,
+  "bg_alpha_p99": 0.00392,
+  "alpha_corr": 1.0,
+  "alpha_mae": 0.0003,
+  "bg_dist_from_v1_green": 109.9,
+  "size_kb": 409.1,
+  "path": "/sessions/rcw-01pqdsnwxe9x5xfzrva7p2au/scratch/alpha_check/tryguys_transparent.webm",
+  "verdicts": {
+   "alpha-capable stream": true,
+   "background decodes transparent": true,
+   "alpha shape survives": true,
+   "not a green key": true,
+   "frame count preserved": true
+  }
+ }
+}
