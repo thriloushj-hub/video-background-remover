@@ -304,6 +304,75 @@ def area_stability(alphas: Sequence[np.ndarray]) -> float:
 # persisted alphas, not a JPEG.
 
 
+def halo_split(base_alphas, alphas, close_frac: float = 0.04,
+               touch_min: float = 0.02, solo_min_frac: float = 0.002
+               ) -> Dict[str, float]:
+    """Split ``halo`` into boundary over-inclusion and a missing subject.
+
+    ``coverage_disagreement`` calls every baseline-only pixel outside the run's
+    *closed* silhouette a halo, and a high halo has been read as "the baseline
+    was keying in background, so the run is right to be smaller".  That reading
+    holds only while both runs are covering the same **people**.
+
+    On butter they are not.  The window is a camera pull-back; by frame 66
+    there are seven dancers in shot.  v2 seeds once at frame 0 and holds its
+    four, v1 holds all seven, and the three v2 never saw are whole human
+    figures far from any v2 foreground -- so they scored as halo.  Measured on
+    the 27 Aug run, **butter's 0.5407 halo is 0.5222 standalone and 0.0186
+    shell**, which is the opposite of what the number was being used to claim.
+
+    So:
+
+    ``halo_shell``   components touching the run's foreground -- the baseline
+                     over-includes at the boundary.  This is the only part
+                     that supports a "the run is cleaner" claim.
+    ``halo_solo``    standalone components far from any run foreground -- the
+                     baseline holds something the run does not.  **Never
+                     quotable on its own.**  It is a subject the run missed
+                     (butter, dance) until a picture says otherwise; on 1917
+                     it is the background soldier the seed gate drops on
+                     purpose, which is a point for the run, but a different
+                     argument.
+
+    ``solo_max_frame_frac`` is the largest standalone component as a share of
+    the frame -- a quick "is this person-sized" read before going to look.
+    """
+    tot = shell = solo = 0.0
+    solo_max = 0.0
+    solo_big = 0
+    for b, a in zip(base_alphas, alphas):
+        h1, h2 = b > 0.5, a > 0.5
+        area = float(h1.sum())
+        if area == 0:
+            continue
+        r = max(3, int(close_frac * b.shape[1]))
+        k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1,) * 2)
+        closed = cv2.morphologyEx(h2.astype(np.uint8), cv2.MORPH_CLOSE, k) > 0
+        halo = (h1 & ~h2 & ~closed).astype(np.uint8)
+        tot += area
+        near = cv2.dilate(h2.astype(np.uint8), np.ones((9, 9), np.uint8)) > 0
+        n, lab, st, _c = cv2.connectedComponentsWithStats(halo, 8)
+        frame_px = float(h1.size)
+        for j in range(1, n):
+            comp = lab == j
+            ar = float(st[j, 4])
+            if float((comp & near).sum()) / ar >= touch_min:
+                shell += ar
+            else:
+                solo += ar
+                if ar / frame_px >= solo_min_frac:
+                    solo_big += 1
+                    solo_max = max(solo_max, ar / frame_px)
+    if tot == 0:
+        return {"halo_frac": 0.0, "halo_shell": 0.0, "halo_solo": 0.0,
+                "solo_components": 0, "solo_max_frame_frac": 0.0}
+    return {"halo_frac": round((shell + solo) / tot, 4),
+            "halo_shell": round(shell / tot, 4),
+            "halo_solo": round(solo / tot, 4),
+            "solo_components": solo_big,
+            "solo_max_frame_frac": round(solo_max, 4)}
+
+
 def coverage_disagreement(base_alphas: Sequence[np.ndarray],
                           alphas: Sequence[np.ndarray],
                           close_frac: float = 0.04,
