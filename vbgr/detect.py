@@ -185,6 +185,99 @@ def select_person_boxes(people: Sequence[Detection], W: int, H: int,
     return kept, dropped
 
 
+def box_containment(a: Box, b: Box) -> float:
+    """Fraction of box ``a`` that lies inside box ``b``.
+
+    Not IoU.  Two people standing shoulder to shoulder can have a large IoU
+    while neither is inside the other; a duplicate detection of one person is
+    almost entirely inside the other.  Containment sees that difference, IoU
+    does not.
+    """
+    x1, y1 = max(a[0], b[0]), max(a[1], b[1])
+    x2, y2 = min(a[2], b[2]), min(a[3], b[3])
+    inter = max(0, x2 - x1) * max(0, y2 - y1)
+    aa = max(0, a[2] - a[0]) * max(0, a[3] - a[1])
+    return float(inter / aa) if aa > 0 else 0.0
+
+
+def mask_containment(a: np.ndarray, b: np.ndarray) -> float:
+    """Fraction of mask ``a``'s pixels that also lie in mask ``b``."""
+    a = np.asarray(a) > 0
+    b = np.asarray(b) > 0
+    aa = int(a.sum())
+    if aa == 0:
+        return 0.0
+    return float(np.logical_and(a, b).sum() / aa)
+
+
+def drop_nested_duplicates(kept: Sequence[Detection],
+                           masks: Optional[Sequence[np.ndarray]] = None,
+                           box_contain_max: float = 0.80,
+                           mask_contain_max: float = 0.70,
+                           ) -> Tuple[List[Detection], List[Detection]]:
+    """Drop a detection that is really a *part of* another kept detection.
+
+    Why this exists
+    ---------------
+    Since one ``obj_id`` is seeded per kept person, a person detected twice --
+    once whole, once as a nested sub-region -- becomes two objects tracked
+    against each other.  SAM2 propagates objects with a non-overlap
+    constraint, so both retreat from their shared boundary and the union
+    develops a low-alpha **seam down the middle of one person**.
+
+    That is exactly the ``interview`` defect: three seeds, and ``seed_2`` (the
+    woman's front) is **97.8% inside** ``seed_1`` (the whole woman).  The
+    result was ``hole_big`` 0.055 -- a band torn through her face and hair --
+    while ``area_cv`` 0.0175, ``dropouts`` 0 and ``subj_lost_at never`` all
+    read that clip clean.
+
+    Measured across the 15-clip benchmark set (27 Aug run seeds), this is the
+    only clip with any nesting at all, and the gap is enormous:
+
+        containment   interview   next highest
+        box mask-bbox     0.968   0.283 (butter)
+        mask pixels       0.978   0.001 (tryguys)
+
+    So ``0.80`` / ``0.70`` sit in empty space in both directions.  Nothing
+    else in the set moves.
+
+    Masks are the evidence that matters
+    -----------------------------------
+    A box test alone is not safe: a small person genuinely standing in front
+    of a large one can be box-contained.  Their *masks* are not -- occlusion
+    means the near person's pixels are precisely the ones the far person
+    does not have.  So when ``masks`` are supplied both tests must fire; with
+    boxes only, the box test is used alone and is deliberately the weaker
+    claim.  Callers that have masks should pass them.
+
+    Returns ``(kept, dropped)``.
+    """
+    kept = list(kept)
+    if len(kept) < 2:
+        return kept, []
+
+    order = sorted(range(len(kept)), key=lambda i: -kept[i].area)
+    survivors: List[int] = []
+    dropped: List[Detection] = []
+    for i in order:
+        nested = False
+        for j in survivors:
+            if box_containment(kept[i].box, kept[j].box) < box_contain_max:
+                continue
+            if masks is not None:
+                if mask_containment(masks[i], masks[j]) < mask_contain_max:
+                    continue
+            nested = True
+            break
+        if nested:
+            dropped.append(kept[i])
+        else:
+            survivors.append(i)
+
+    survivors.sort()
+    return [kept[i] for i in survivors], dropped
+
+
 def held_props(props: Sequence[Detection], people: Sequence[Detection],
                max_frac: float = 0.25) -> List[Detection]:
     """Props that overlap a kept person and are small relative to them.

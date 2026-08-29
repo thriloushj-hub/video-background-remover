@@ -209,7 +209,7 @@ def build_seeds(frames, work, det):
     boxes = o["boxes"][sel].detach().cpu().numpy()
     masks = o["masks"][sel, 0].detach().cpu().numpy() > 0.5
     confs = o["scores"][sel].detach().cpu().numpy()
-    from vbgr.detect import Detection, select_person_boxes
+    from vbgr.detect import Detection, drop_nested_duplicates, select_person_boxes
     from vbgr.config import DetectConfig
     cfg = DetectConfig()
     dets = [Detection(box=tuple(map(float, boxes[i])), conf=float(confs[i]),
@@ -217,12 +217,21 @@ def build_seeds(frames, work, det):
     pos = {id(d): i for i, d in enumerate(dets)}
     kept, dropped = select_person_boxes(dets, W, H, cfg.person_rel_size_min,
                                         cfg.box_score_ratio, cfg.person_rel_area_min)
+    # One obj_id is seeded per kept person below, so a person detected twice
+    # -- once whole, once as a nested part -- becomes two objects tracked
+    # against each other and SAM2 tears a seam down her middle.  interview.
+    kept, dup = drop_nested_duplicates(
+        kept, masks=[masks[pos[id(d)]] for d in kept],
+        box_contain_max=cfg.duplicate_box_contain_max,
+        mask_contain_max=cfg.duplicate_mask_contain_max)
+    dropped = list(dropped) + list(dup)
     seeds = []
     for n, i in enumerate([pos[id(d)] for d in kept]):
         m = masks[i].astype(np.uint8) * 255
         cv2.imwrite(f"{work}/seed_{n}.png", m)
         seeds.append(m)
-    print(f"    seed: {len(boxes)} detected -> {len(seeds)} kept, {len(dropped)} dropped")
+    print(f"    seed: {len(boxes)} detected -> {len(seeds)} kept, "
+          f"{len(dropped)} dropped ({len(dup)} nested duplicate)")
     return seeds
 
 

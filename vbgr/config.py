@@ -69,6 +69,15 @@ class DetectConfig:
     person_rel_area_min: float = 0.20
     # Prominence = conf * centrality * area, used only for ranking + a floor.
     box_score_ratio: float = 0.15
+    # Duplicate suppression: a detection this far inside another kept
+    # detection is the same person found twice, not a second person.  One
+    # obj_id is seeded per kept person, so a nested duplicate makes SAM2
+    # track a person against herself and tears a seam down her middle --
+    # this is the `interview` hole_big 0.055 defect.  Measured on the 15-clip
+    # set the only nested pair is interview's (box 0.968 / mask 0.978); the
+    # next highest is 0.283 / 0.001, so both thresholds sit in empty space.
+    duplicate_box_contain_max: float = 0.80
+    duplicate_mask_contain_max: float = 0.70
     # CLAHE is deliberately NOT used: it pushes frames out of YOLO's training
     # distribution and measurably hurt recall on bright/saturated footage.
     device: str = "auto"
