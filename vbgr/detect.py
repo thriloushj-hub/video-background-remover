@@ -278,6 +278,42 @@ def drop_nested_duplicates(kept: Sequence[Detection],
     return [kept[i] for i in survivors], dropped
 
 
+def new_subjects(masks: Sequence[np.ndarray],
+                 held_alpha: np.ndarray,
+                 overlap_max: float = 0.30,
+                 min_frame_frac: float = 0.002,
+                 alpha_thresh: float = 0.5) -> List[int]:
+    """Indices of detections the matte is **not** already holding.
+
+    This is the decision behind re-seeding.  The benchmark seeds once at frame
+    0, so anyone who walks into shot afterwards is invisible to it forever --
+    measured on the 27 Aug run, butter loses three dancers to the camera
+    pull-back and dance loses one, and all four scored as v1 "halo" because
+    v1 holds them and we do not (see Halo_Was_Missing_Subjects).
+
+    A detection is new when little of it overlaps what the tracker already has.
+    The test is deliberately on **coverage of the detection**, not IoU: a
+    person standing partly behind someone we are holding still has most of
+    their own pixels outside the matte, while a re-detection of a subject we
+    already hold is almost entirely inside it.
+
+    ``min_frame_frac`` drops specks, so a re-seed scan cannot inject noise as
+    a subject.
+
+    Returns the indices into ``masks``, in the order given.
+    """
+    held = np.asarray(held_alpha, np.float32) > alpha_thresh
+    out: List[int] = []
+    for i, m in enumerate(masks):
+        mk = np.asarray(m) > (127 if np.asarray(m).dtype == np.uint8 else 0.5)
+        ar = float(mk.sum())
+        if ar == 0 or ar / mk.size < min_frame_frac:
+            continue
+        if float((mk & held).sum()) / ar <= overlap_max:
+            out.append(i)
+    return out
+
+
 def held_props(props: Sequence[Detection], people: Sequence[Detection],
                max_frac: float = 0.25) -> List[Detection]:
     """Props that overlap a kept person and are small relative to them.

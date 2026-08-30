@@ -235,6 +235,57 @@ def build_seeds(frames, work, det):
     return seeds
 
 
+def reseed_scan(frames, alphas, det, cfg=None, every=None, overlap_max=None):
+    """Find people who walk in after frame 0, as (frame_idx, mask) pairs.
+
+    The benchmark seeds once at frame 0, so an entrant is invisible to it
+    forever. Measured on the 27 Aug run, butter loses three dancers to the
+    camera pull-back and dance loses one, and all four scored as v1 halo --
+    v1 holds them and we do not. See Halo_Was_Missing_Subjects.
+
+    A person is only prompted **once**: after a scan accepts somebody, the
+    running "held" mask is widened to include them, so the next scan does not
+    hand the tracker a second copy of the same subject.
+    """
+    import torch
+    from vbgr.detect import (Detection, drop_nested_duplicates, new_subjects,
+                             select_person_boxes)
+    from vbgr.config import DetectConfig
+    cfg = cfg or DetectConfig()
+    every = every or cfg.reseed_every
+    overlap_max = cfg.reseed_overlap_max if overlap_max is None else overlap_max
+    H, W = frames[0].shape[:2]
+    out, claimed = [], None
+    for i in range(every, len(frames), every):
+        rgb = cv2.cvtColor(frames[i], cv2.COLOR_BGR2RGB)
+        with torch.no_grad():
+            o = det([torch.from_numpy(rgb).permute(2, 0, 1).float().div(255).cuda()])[0]
+        sel = (o["labels"] == 1) & (o["scores"] > 0.80)
+        boxes = o["boxes"][sel].detach().cpu().numpy()
+        masks = o["masks"][sel, 0].detach().cpu().numpy() > 0.5
+        confs = o["scores"][sel].detach().cpu().numpy()
+        if not len(boxes):
+            continue
+        dets = [Detection(box=tuple(map(float, boxes[k])), conf=float(confs[k]),
+                          cls=0, label="person") for k in range(len(boxes))]
+        pos = {id(d): k for k, d in enumerate(dets)}
+        kept, _ = select_person_boxes(dets, W, H, cfg.person_rel_size_min,
+                                      cfg.box_score_ratio, cfg.person_rel_area_min)
+        kept, _ = drop_nested_duplicates(
+            kept, masks=[masks[pos[id(d)]] for d in kept],
+            box_contain_max=cfg.duplicate_box_contain_max,
+            mask_contain_max=cfg.duplicate_mask_contain_max)
+        km = [masks[pos[id(d)]] for d in kept]
+        held = alphas[i] if claimed is None else np.maximum(alphas[i], claimed)
+        for j in new_subjects(km, held, overlap_max=overlap_max):
+            out.append((i, (km[j].astype(np.uint8) * 255)))
+            claimed = km[j].astype(np.float32) if claimed is None else \
+                np.maximum(claimed, km[j].astype(np.float32))
+    print(f"    reseed scan: every {every} frames -> {len(out)} new subject(s) "
+          f"at {sorted({f for f, _ in out})}")
+    return out
+
+
 def motion_fix(alphas, frames, eng):
     from vbgr import motion, refine
     from vbgr.config import MotionConfig, RefineConfig
@@ -318,6 +369,7 @@ def main():
             "Refusing to run: a v2 column with no v1 column proves nothing.")
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     do_fix = "--fix" in sys.argv
+    do_reseed = "--reseed" in sys.argv
     clips = args or [c for c in V1
                      if V1[c] and V1[c].get("trusted", True)
                      and V1[c].get("window") is not None]
@@ -361,6 +413,23 @@ def main():
                       "subj_lost_at cannot be measured on this clip")
             r = {"off": score(A, len(seeds), object_areas=oa)}
             sheet(frames, A, f"{work}/sheet_off.jpg")
+            if do_reseed:
+                # A SECOND ARM, not a replacement: the off arm above is
+                # byte-identical to every run before 29 Aug, so the frozen
+                # comparison survives while entrants finally get measured.
+                extra = reseed_scan(frames, A, det)
+                if extra:
+                    eng.reset()
+                    C = eng.matte(frames, seed_mask=None, seed_masks=seeds,
+                                  extra_seeds=extra)
+                    oc = getattr(eng, "object_areas", None)
+                    r["reseed"] = score(C, len(seeds) + len(extra),
+                                        object_areas=oc)
+                    r["n_reseed"] = len(extra)
+                    sheet(frames, C, f"{work}/sheet_reseed.jpg")
+                    save_alphas(C, f"{work}/alpha_reseed")
+                else:
+                    r["n_reseed"] = 0
             if do_fix:
                 B = motion_fix(A, frames, eng)
                 # the motion fix reshapes the union, not the tracker's own

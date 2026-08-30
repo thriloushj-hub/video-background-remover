@@ -78,6 +78,14 @@ class DetectConfig:
     # next highest is 0.283 / 0.001, so both thresholds sit in empty space.
     duplicate_box_contain_max: float = 0.80
     duplicate_mask_contain_max: float = 0.70
+    # Re-seeding: scan for people the matte is not holding every N frames, and
+    # treat a detection as new when at most this much of it overlaps what we
+    # already have.  Coverage of the detection, not IoU -- a person standing
+    # partly behind someone we hold still has most of their own pixels
+    # outside the matte.  Off by default; the benchmark's frozen arm seeds
+    # once at frame 0 and every run before 29 Aug did the same.
+    reseed_every: int = 12
+    reseed_overlap_max: float = 0.30
     # CLAHE is deliberately NOT used: it pushes frames out of YOLO's training
     # distribution and measurably hurt recall on bright/saturated footage.
     device: str = "auto"

@@ -42,7 +42,7 @@ from __future__ import annotations
 import os
 import shutil
 import tempfile
-from typing import Callable, Optional, Sequence
+from typing import Callable, Optional, Sequence, Tuple
 
 import cv2
 import numpy as np
@@ -261,7 +261,9 @@ class SAM2MattingEngine(MattingEngine):
               seed_mask: Optional[np.ndarray],
               n_warmup: int = 10,
               progress: Optional[Callable[[int], None]] = None,
-              seed_masks: Optional[Sequence[np.ndarray]] = None) -> np.ndarray:
+              seed_masks: Optional[Sequence[np.ndarray]] = None,
+              extra_seeds: Optional[Sequence[Tuple[int, np.ndarray]]] = None
+              ) -> np.ndarray:
         """Matte a shot.
 
         ``seed_masks`` -- one 0/255 mask per subject -- is the honest way to
@@ -274,6 +276,23 @@ class SAM2MattingEngine(MattingEngine):
         If ``seed_masks`` is not given, the union in ``seed_mask`` is split into
         connected components (see ``split_objects``) so existing call sites get
         the fix too.  The split is always announced, never silent.
+
+        ``extra_seeds`` -- ``(frame_idx, mask)`` pairs -- prompts additional
+        objects part-way through the shot, for people who walk in after frame
+        0.  Each gets its own ``obj_id`` and contributes nothing before its
+        own start frame, which is the correct reading: they were not there.
+        SAM2 accepts prompts on any frame before propagation starts, so this
+        needs no second pass.
+
+        Off unless the caller asks: every run before 2026-08-29 seeded only at
+        frame 0, and the frozen benchmark arm still does, so the numbers stay
+        comparable.  See ``vbgr_bench.py --reseed``.
+
+        **NOT YET VERIFIED ON A GPU.**  The decision of *who* is new is
+        CPU-tested (``vbgr.detect.new_subjects``); this hook -- whether SAM2
+        propagates a mid-shot object the way the API documents -- has only
+        been read from the upstream signature, not run. Do not quote a
+        ``reseed`` column until a real run has produced one.
         """
         self._ensure()
         t = self._torch
@@ -289,7 +308,10 @@ class SAM2MattingEngine(MattingEngine):
         else:
             objs = [seed_mask]
             src = "union"
-        print(f"[sam2matting] seeding {len(objs)} object(s) ({src})")
+        extra = list(extra_seeds or [])
+        print(f"[sam2matting] seeding {len(objs)} object(s) ({src})"
+              + (f" + {len(extra)} mid-shot at frames "
+                 f"{sorted({int(f) for f, _ in extra})}" if extra else ""))
 
         d = self._materialise(frames)
         h, w = frames[0].shape[:2]
@@ -299,7 +321,8 @@ class SAM2MattingEngine(MattingEngine):
         # frame t.  Filled by _alpha_union.  NaN marks a frame the predictor
         # never returned (see the missing-frame handling below), so a hold is
         # never mistaken for a measurement.
-        obj_areas = np.full((len(frames), len(objs)), np.nan, np.float32)
+        n_obj = len(objs) + len(extra)
+        obj_areas = np.full((len(frames), n_obj), np.nan, np.float32)
         self._obj_area_frame = []
 
         try:
@@ -309,13 +332,17 @@ class SAM2MattingEngine(MattingEngine):
                 self._predictor.add_new_mask(
                     inference_state=state, frame_idx=0, obj_id=k + 1,
                     mask=self._seed_logits(m))
+            for j, (fidx, m) in enumerate(extra):
+                self._predictor.add_new_mask(
+                    inference_state=state, frame_idx=int(fidx),
+                    obj_id=len(objs) + j + 1, mask=self._seed_logits(m))
 
             autocast = t.autocast("cuda", dtype=t.bfloat16) if self.device == "cuda" \
                 else _NullCtx()
             seen = set()
             with t.inference_mode(), autocast:
                 for idx, _objs, _lg, alpha, *_ in self._predictor.propagate_in_video(state):
-                    a = self._alpha_union(alpha, len(objs), h, w)
+                    a = self._alpha_union(alpha, n_obj, h, w)
                     out[idx] = a
                     row = self._obj_area_frame
                     if len(row) == len(objs):
