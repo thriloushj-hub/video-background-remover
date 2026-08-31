@@ -69,6 +69,16 @@ class DetectConfig:
     person_rel_area_min: float = 0.20
     # Prominence = conf * centrality * area, used only for ranking + a floor.
     box_score_ratio: float = 0.15
+    # Absolute confidence floor, beside the relative one above.  The relative
+    # floor is `box_score_ratio * top_conf`, which on a clip with one very
+    # confident subject is permissive to the point of uselessness: on eddie it
+    # is 0.15 * 0.94 = 0.141, and a 0.277 detection of a *blurred portrait
+    # hanging on the wall* cleared it, producing two phantom re-entry events
+    # (3.3a).  Measured over 284 kept detections across all 15 clips, that
+    # phantom is the ONLY one below 0.755 -- so any floor in 0.28..0.75 drops
+    # exactly it and nothing else.  0.50 sits 1.81x above the phantom and
+    # 1.51x below the lowest genuine detection in the set.
+    conf_abs_min: float = 0.50
     # Duplicate suppression: a detection this far inside another kept
     # detection is the same person found twice, not a second person.  One
     # obj_id is seeded per kept person, so a nested duplicate makes SAM2
@@ -264,6 +274,24 @@ class ReIDConfig:
     # A detection counts as uncovered if the current matte covers less than
     # this fraction of its box.
     max_overlap: float = 0.35
+    # Mask-coverage confirmation for anything the cheap box test flags.
+    #
+    # `max_overlap` above thresholds the fraction of a detection's BOUNDING
+    # BOX the matte fills, and box fill is a function of pose, not of tracking:
+    # measured on the 30 persisted seeds of correctly-held subjects, box
+    # coverage runs 0.302..0.738, so 3 of 30 are already below 0.35 at frame 0
+    # with nothing wrong.  That is where 19 of the 22 phantom re-entry events
+    # came from (3.3a).
+    #
+    # Coverage of the detection's own MASK does not have that failure mode:
+    # over the same 30 seeds it runs 0.802..0.975, and a subject the matte is
+    # genuinely not holding scores ~0.  0.50 is 1.60x below the worst genuine
+    # case and far above a real miss.
+    #
+    # The box test stays as the cheap pre-filter -- the seeder only runs on
+    # boxes that fail it, which is what keeps this one detector pass per scan
+    # on a fixed-cast clip.
+    mask_max_overlap: float = 0.50
     min_area_frac: float = 0.0015
     # When an identity is re-acquired, re-matte this many frames on each side
     # of the gap so the alpha stitches seamlessly.

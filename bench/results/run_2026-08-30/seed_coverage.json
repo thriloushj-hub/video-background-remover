@@ -1,0 +1,182 @@
+[
+ {
+  "clip": "1917",
+  "seed": "seed_0.png",
+  "box_cov": 0.4762380246402445,
+  "mask_cov": 0.9318787719862848
+ },
+ {
+  "clip": "asianboss2",
+  "seed": "seed_0.png",
+  "box_cov": 0.6072837041725497,
+  "mask_cov": 0.9549353007391712
+ },
+ {
+  "clip": "butter",
+  "seed": "seed_0.png",
+  "box_cov": 0.39836656163186773,
+  "mask_cov": 0.865836973741059
+ },
+ {
+  "clip": "butter",
+  "seed": "seed_1.png",
+  "box_cov": 0.3985778373448,
+  "mask_cov": 0.9147559798627958
+ },
+ {
+  "clip": "butter",
+  "seed": "seed_2.png",
+  "box_cov": 0.6826215400124142,
+  "mask_cov": 0.9620427263479145
+ },
+ {
+  "clip": "butter",
+  "seed": "seed_3.png",
+  "box_cov": 0.617948717948718,
+  "mask_cov": 0.8456057007125891
+ },
+ {
+  "clip": "codylexi",
+  "seed": "seed_0.png",
+  "box_cov": 0.6362020744642706,
+  "mask_cov": 0.9748464439709478
+ },
+ {
+  "clip": "codylexi",
+  "seed": "seed_1.png",
+  "box_cov": 0.5806181478425955,
+  "mask_cov": 0.9478668434677253
+ },
+ {
+  "clip": "dance",
+  "seed": "seed_0.png",
+  "box_cov": 0.339171068133381,
+  "mask_cov": 0.9168383320477336
+ },
+ {
+  "clip": "dance",
+  "seed": "seed_1.png",
+  "box_cov": 0.47018704379562043,
+  "mask_cov": 0.9186039978875692
+ },
+ {
+  "clip": "dance",
+  "seed": "seed_2.png",
+  "box_cov": 0.5380728817348536,
+  "mask_cov": 0.940390852191812
+ },
+ {
+  "clip": "dance",
+  "seed": "seed_3.png",
+  "box_cov": 0.5505439432832172,
+  "mask_cov": 0.9256662877352533
+ },
+ {
+  "clip": "dance2",
+  "seed": "seed_0.png",
+  "box_cov": 0.36927114477443357,
+  "mask_cov": 0.9186838563904903
+ },
+ {
+  "clip": "dance3",
+  "seed": "seed_0.png",
+  "box_cov": 0.31419509553647407,
+  "mask_cov": 0.8872236958443855
+ },
+ {
+  "clip": "dance3",
+  "seed": "seed_1.png",
+  "box_cov": 0.30157142857142855,
+  "mask_cov": 0.8485284739801735
+ },
+ {
+  "clip": "eddie",
+  "seed": "seed_0.png",
+  "box_cov": 0.5506486779214051,
+  "mask_cov": 0.9285836418366251
+ },
+ {
+  "clip": "interview",
+  "seed": "seed_0.png",
+  "box_cov": 0.5135523619671986,
+  "mask_cov": 0.957191427893467
+ },
+ {
+  "clip": "interview",
+  "seed": "seed_1.png",
+  "box_cov": 0.6098501291229206,
+  "mask_cov": 0.9181571425006724
+ },
+ {
+  "clip": "ipman",
+  "seed": "seed_0.png",
+  "box_cov": 0.4556590656284761,
+  "mask_cov": 0.9023651757776551
+ },
+ {
+  "clip": "ipman",
+  "seed": "seed_1.png",
+  "box_cov": 0.5118761954442705,
+  "mask_cov": 0.8991554406050428
+ },
+ {
+  "clip": "jensen",
+  "seed": "seed_0.png",
+  "box_cov": 0.6488868871445116,
+  "mask_cov": 0.9739154151482092
+ },
+ {
+  "clip": "leo",
+  "seed": "seed_0.png",
+  "box_cov": 0.5722006134377269,
+  "mask_cov": 0.9634262483831075
+ },
+ {
+  "clip": "microsoft",
+  "seed": "seed_0.png",
+  "box_cov": 0.6154622689927511,
+  "mask_cov": 0.952407047755161
+ },
+ {
+  "clip": "microsoft",
+  "seed": "seed_1.png",
+  "box_cov": 0.6727604451742383,
+  "mask_cov": 0.9679841390696027
+ },
+ {
+  "clip": "shakira",
+  "seed": "seed_0.png",
+  "box_cov": 0.4933500531995744,
+  "mask_cov": 0.8462821540121993
+ },
+ {
+  "clip": "shakira",
+  "seed": "seed_1.png",
+  "box_cov": 0.4651517559192754,
+  "mask_cov": 0.864100690457372
+ },
+ {
+  "clip": "shakira",
+  "seed": "seed_2.png",
+  "box_cov": 0.46417598400145443,
+  "mask_cov": 0.8022441056718114
+ },
+ {
+  "clip": "tryguys",
+  "seed": "seed_0.png",
+  "box_cov": 0.5928498264977633,
+  "mask_cov": 0.9529685775290764
+ },
+ {
+  "clip": "tryguys",
+  "seed": "seed_1.png",
+  "box_cov": 0.6762067273851929,
+  "mask_cov": 0.9269241297161369
+ },
+ {
+  "clip": "tryguys",
+  "seed": "seed_2.png",
+  "box_cov": 0.7376650909234558,
+  "mask_cov": 0.9676365866502545
+ }
+]

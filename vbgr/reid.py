@@ -322,6 +322,47 @@ def box_coverage(alpha: np.ndarray, box: Box) -> float:
     return float((sub > 0.5).mean())
 
 
+def mask_coverage(alpha: np.ndarray, mask: np.ndarray) -> float:
+    """Fraction of a detection's own MASK already explained by the matte.
+
+    The mask-shaped counterpart to :func:`box_coverage`, and the reason it
+    exists: box fill is a function of pose.  Measured over the 30 persisted
+    seed masks of correctly-held subjects, *box* coverage runs 0.302..0.738 --
+    three of them already below the 0.35 threshold at frame 0, with nothing
+    wrong -- while *mask* coverage runs 0.802..0.975.  A subject the matte is
+    genuinely not holding scores ~0 either way.  Only one of those two numbers
+    can carry an absolute threshold.
+    """
+    m = np.asarray(mask)
+    if m.shape[:2] != alpha.shape[:2]:
+        m = cv2.resize(m.astype(np.uint8), (alpha.shape[1], alpha.shape[0]),
+                       interpolation=cv2.INTER_NEAREST)
+    m = m > 0.5
+    if not m.any():
+        return 1.0          # nothing to explain; never call it uncovered
+    return float((alpha > 0.5)[m].mean())
+
+
+def confirm_uncovered(alpha: np.ndarray,
+                      masks: Sequence[Optional[np.ndarray]],
+                      mask_max_overlap: float = 0.50) -> List[int]:
+    """Indices of ``masks`` the matte still does not explain.
+
+    Second stage of a two-stage test.  :func:`uncovered_boxes` is the cheap
+    pre-filter -- one detector pass, no segmentation -- and this confirms its
+    hits against the detection's actual silhouette.  A mask that could not be
+    produced (``None``) is treated as unconfirmed rather than uncovered: a
+    failure to segment is not evidence of a missing subject.
+    """
+    out = []
+    for i, mk in enumerate(masks):
+        if mk is None:
+            continue
+        if mask_coverage(alpha, mk) < mask_max_overlap:
+            out.append(i)
+    return out
+
+
 def uncovered_boxes(alpha: np.ndarray, boxes: Sequence[Box],
                     max_overlap: float = 0.35,
                     min_area_frac: float = 0.0015) -> List[int]:
@@ -331,6 +372,11 @@ def uncovered_boxes(alpha: np.ndarray, boxes: Sequence[Box],
     returns [] and the expensive promptable segmenter is never called, so the
     whole re-entry system costs one detector pass every N frames on a fixed-cast
     clip.
+
+    **It is a pre-filter, not a verdict.**  Box fill depends on pose, so this
+    fires on correctly-held subjects -- dance3's median component fills 0.345
+    of its own box against a 0.35 threshold.  Confirm every hit with
+    :func:`confirm_uncovered` before acting on it.
     """
     H, W = alpha.shape[:2]
     out = []

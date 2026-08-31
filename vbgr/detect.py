@@ -117,6 +117,7 @@ def select_person_boxes(people: Sequence[Detection], W: int, H: int,
                         rel_size_min: float = 0.60,
                         score_ratio: float = 0.15,
                         rel_area_min: float = 0.20,
+                        conf_abs_min: float = 0.50,
                         ) -> Tuple[List[Detection], List[Detection]]:
     """Split detections into subjects and background bystanders.
 
@@ -149,6 +150,17 @@ def select_person_boxes(people: Sequence[Detection], W: int, H: int,
     (0.191, 0.150), taking butter from 6 kept to 4 -- see docs, that one is a
     judgement call about the shot rather than a defect.
 
+    * **Confidence, absolutely as well as relatively.**  ``score_ratio`` floors
+      confidence at a fraction of the best detection in the frame, which on a
+      clip with one very confident subject is barely a floor at all: on eddie
+      it is ``0.15 * 0.94 = 0.141``.  A 0.277 detection of a blurred portrait
+      hanging on the wall behind the subject cleared it, cleared the height
+      gate at 0.952 of the tallest, and was 14 px short of the frame edge so
+      the area gate did not apply either -- three gates, none of which is about
+      *whether this is a person at all*.  Over 284 kept detections across the
+      15-clip set that phantom is the only one below **0.755**, so an absolute
+      floor anywhere in 0.28..0.75 removes it and nothing else.
+
     Returns ``(kept, dropped)``.
     """
     if not people:
@@ -167,6 +179,11 @@ def select_person_boxes(people: Sequence[Detection], W: int, H: int,
               and d.area < rel_area_min * largest):
             # Passed the height gate but is small in area and is not cropped by
             # the frame: a distant bystander, not a near subject.
+            dropped.append(d)
+        elif d.conf < conf_abs_min:
+            # Not a person, as opposed to not a *subject*: the three gates
+            # above all ask about relative size or prominence, and a confident
+            # detector on a real person does not score 0.28.
             dropped.append(d)
         elif d.conf < score_ratio * top_conf:
             # Confidence floor only.  It is tempting to floor on prominence

@@ -38,7 +38,7 @@ from .detect import Detection, PersonDetector, held_props, select_person_boxes
 from .engines.base import MattingEngine, build_engine
 from .gate import QualityGate
 from .reid import (IdentityBank, FeatureExtractor, uncovered_boxes,
-                   box_coverage)
+                   box_coverage, mask_coverage, confirm_uncovered)
 from .seed import SAM3Seeder, build_seed, build_seeder
 
 
@@ -202,7 +202,8 @@ class Pipeline:
         people, props = self.detector.detect(frames[0])
         kept, dropped = select_person_boxes(
             people, W, H, cfg.detect.person_rel_size_min,
-            cfg.detect.box_score_ratio, cfg.detect.person_rel_area_min)
+            cfg.detect.box_score_ratio, cfg.detect.person_rel_area_min,
+            cfg.detect.conf_abs_min)
         rep.n_kept, rep.n_dropped = len(kept), len(dropped)
 
         if not kept:
@@ -292,7 +293,8 @@ class Pipeline:
         kept, _ = select_person_boxes(
             people, W, H, self.cfg.detect.person_rel_size_min,
             self.cfg.detect.box_score_ratio,
-            self.cfg.detect.person_rel_area_min)
+            self.cfg.detect.person_rel_area_min,
+            self.cfg.detect.conf_abs_min)
         if not kept:
             return np.zeros((H, W), np.float32), False
         seed = build_seed(frame, self.seeder, kept,
@@ -339,19 +341,50 @@ class Pipeline:
             kept, _ = select_person_boxes(
                 people, W, H, cfg.detect.person_rel_size_min,
                 cfg.detect.box_score_ratio,
-                cfg.detect.person_rel_area_min)
+                cfg.detect.person_rel_area_min,
+                cfg.detect.conf_abs_min)
             if not kept:
                 continue
             unc = uncovered_boxes(alphas[i], [d.box for d in kept],
                                   cfg.reid.max_overlap, cfg.reid.min_area_frac)
             if unc:
+                # Second stage.  The box test is a pose-sensitive pre-filter
+                # (3.3a: it produced 19 phantom events on this set), so confirm
+                # each hit against the detection's own silhouette before acting
+                # on it.  The seeder runs only on boxes that failed the cheap
+                # test, which is what keeps a fixed-cast clip at one detector
+                # pass per scan.
+                cand = [kept[j].box for j in unc]
+                try:
+                    masks = list(self.seeder.masks_from_boxes(frames[i], cand))
+                except Exception as e:                        # noqa: BLE001
+                    masks = []
+                    rep.notes.append(
+                        f"f{i}: mask confirmation unavailable "
+                        f"({type(e).__name__}); falling back to the box test")
+                if masks:
+                    masks += [None] * (len(cand) - len(masks))
+                    keep_pos = set(confirm_uncovered(alphas[i], masks,
+                                                     cfg.reid.mask_max_overlap))
+                    for pos, j in enumerate(unc):
+                        if pos in keep_pos:
+                            continue
+                        mk = masks[pos]
+                        why = ("no mask" if mk is None
+                               else f"mask cov "
+                                    f"{mask_coverage(alphas[i], mk):.3f}")
+                        print(f"[reentry] f{i:>3} box{j} REJECTED by mask "
+                              f"confirmation (box cov "
+                              f"{box_coverage(alphas[i], kept[j].box):.3f}, "
+                              f"{why})", flush=True)
+                    unc = [unc[pos] for pos in sorted(keep_pos)]
+            if unc:
                 pending[i] = unc
                 boxes_at[i] = kept
-                # Diagnostic only (3.3a).  A box is called "uncovered" on box
-                # fill, which is a function of pose, so print the number that
-                # made the decision -- a value just under max_overlap on a
-                # spread pose is a false positive, a value near 0 is a person
-                # the matte genuinely is not holding.
+                # Diagnostic (3.3a).  Print the number that made the decision:
+                # a box value just under max_overlap on a spread pose was a
+                # false positive, a value near 0 is a person the matte
+                # genuinely is not holding.
                 print(f"[reentry] f{i:>3} uncovered={len(unc)} "
                       + " ".join(f"box{j}:cov={box_coverage(alphas[i], kept[j].box):.3f}"
                                  f",box={tuple(int(v) for v in kept[j].box)}"
@@ -399,7 +432,8 @@ class Pipeline:
         kept, _ = select_person_boxes(people, W, H,
                                       cfg.detect.person_rel_size_min,
                                       cfg.detect.box_score_ratio,
-                                      cfg.detect.person_rel_area_min)
+                                      cfg.detect.person_rel_area_min,
+                                      cfg.detect.conf_abs_min)
         if not kept:
             return None
         seed = build_seed(frames[anchor], self.seeder, kept,
@@ -427,7 +461,8 @@ class Pipeline:
         kept, _ = select_person_boxes(people, W, H,
                                       cfg.detect.person_rel_size_min,
                                       cfg.detect.box_score_ratio,
-                                      cfg.detect.person_rel_area_min)
+                                      cfg.detect.person_rel_area_min,
+                                      cfg.detect.conf_abs_min)
         if not kept:
             return None
         seed = build_seed(frames[anchor], self.seeder, kept,
