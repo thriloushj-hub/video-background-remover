@@ -62,17 +62,41 @@ class SAM3Seeder:
         self.backend = "uninitialised"
 
     def _ensure(self):
+        """Load a SAM 3 image backend, and say precisely what failed if not.
+
+        This used to swallow the ultralytics exception with a bare
+        ``except Exception: pass`` and then report one generic sentence, which
+        is why "the full pipeline is unrun" sat in the tracker for three weeks
+        with nobody knowing whether ultralytics was missing, the weights were
+        missing, or the import path was wrong.  Run on an A100 on 30 Aug, the
+        answer was **all three are different problems and neither backend
+        exists as coded**::
+
+            from ultralytics import SAM        -> OK
+            SAM("sam3.pt")                     -> FileNotFoundError: 'sam3.pt'
+            from sam3.build_sam import ...     -> ModuleNotFoundError
+
+        The weights ``sam3.pt`` are not in ultralytics' auto-download set, and
+        the bundled fork lays the package out as ``sam3.model_builder`` and
+        ``sam3.model.build_sam3matting`` -- there is no ``sam3.build_sam``.
+        That import was written against Meta's reference layout, not the
+        SAM2Matting fork that is actually installed.
+
+        Both errors are now reported.  A diagnostic that hides the real
+        exception costs more than the one line it saves.
+        """
         if self._impl is not None:
             return
         from .engines.base import resolve_device
         self.device = resolve_device(self._device)
+        why = []
         try:
             from ultralytics import SAM
             self._impl = ("ultralytics", SAM(self.model_name))
             self.backend = "ultralytics"
             return
-        except Exception:                                    # noqa: BLE001
-            pass
+        except Exception as e:                               # noqa: BLE001
+            why.append(f"ultralytics: {type(e).__name__}: {e}")
         try:
             from sam3.build_sam import build_sam3_image_predictor
             self._impl = ("meta", build_sam3_image_predictor(
@@ -80,10 +104,14 @@ class SAM3Seeder:
             self.backend = "meta"
             return
         except Exception as e:                               # noqa: BLE001
-            raise RuntimeError(
-                "No SAM 3 backend found. Install either `ultralytics` "
-                "(pip install ultralytics, then SAM('sam3.pt')) or Meta's "
-                "reference sam3 package.") from e
+            why.append(f"sam3 (meta layout): {type(e).__name__}: {e}")
+        raise RuntimeError(
+            "No SAM 3 image backend could be loaded. Both were tried:\n  "
+            + "\n  ".join(why)
+            + f"\n(model requested: {self.model_name!r})\n"
+            "The benchmark does not hit this path -- it seeds from torchvision "
+            "Mask R-CNN, which is what every validated seed in this project "
+            "came from. See the seeding-backend note in HANDOFF.")
 
     # -- prompting ---------------------------------------------------------- #
 
