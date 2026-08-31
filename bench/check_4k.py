@@ -9,7 +9,7 @@ already there, so it can ride a warm VM at any point.
 Why it is an upscale, stated plainly
 ------------------------------------
 **There is no 4K footage in this project.** All 19 delivered sources and all 19
-v1 mattes are 1920 wide -- checked 29 Aug, every one. The plan item said "the
+v1 mattes are 1920 wide -- checked 30 Aug, every one. The plan item said "the
 3840/4096 clips run without running out of memory" and those clips do not
 exist; the number came from an assumption, not from the delivery. That is the
 same shape of problem as 3.3, whose test case also turned out not to be in the

@@ -303,7 +303,7 @@ def new_subjects(masks: Sequence[np.ndarray],
     .. warning::
 
        **This is the per-scan test only, and it is not enough on its own.**
-       Measured on the GPU, 29 Aug: butter found **9** new subjects across
+       Measured on the GPU, 30 Aug: butter found **9** new subjects across
        four scans where the truth is about three. The caller marks an accepted
        person "claimed" with their mask at that frame, and by the next scan
        they have *moved*, so the overlap against the stale mask is low and

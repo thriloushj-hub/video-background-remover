@@ -289,7 +289,7 @@ class SAM2MattingEngine(MattingEngine):
         comparable.  See ``vbgr_bench.py --reseed``.
 
         **THIS DOES NOT WORK ON THE CHOSEN MODEL.**  Run on an A100 on
-        29 Aug it raises::
+        30 Aug it raises::
 
             TypeError: Sam3TrackerBase.track_step() got an unexpected
             keyword argument 'gt_masks'

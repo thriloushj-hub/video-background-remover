@@ -415,7 +415,7 @@ def main():
             sheet(frames, A, f"{work}/sheet_off.jpg")
             if do_reseed:
                 # A SECOND ARM, not a replacement, and it must never be able to
-                # take the off arm down with it.  On the 29 Aug run it did
+                # take the off arm down with it.  On the 30 Aug run it did
                 # exactly that: the engine hook raised, the exception reached
                 # the outer handler, and butter and dance lost their *already
                 # computed* off rows to a failure in an arm flagged unverified.
