@@ -112,6 +112,8 @@ class Pipeline:
         if self._engine is None:
             m = self.cfg.matting
             kw = dict(checkpoint=m.checkpoint, device=m.device, half=m.half)
+            if m.repo_dir:
+                kw["repo_dir"] = m.repo_dir
             # only engines that support it take this; build_engine passes
             # through to __init__ so guard on the signature
             import inspect as _i

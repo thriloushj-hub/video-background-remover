@@ -137,6 +137,14 @@ class MattingConfig:
     # "matanyone2" | "sam2matting" | "rvm" | "passthrough"
     engine: str = "sam2matting"
     checkpoint: Optional[str] = None
+    # Where the engine's upstream repo is cloned. SAM2Matting imports `sam3`
+    # from its own tree, so without this the product path dies on
+    # `ModuleNotFoundError: No module named 'sam3'` -- which is exactly what it
+    # did the first time pipeline.py was ever run (30 Aug). The benchmark
+    # passed repo_dir straight to build_engine and never needed a config field,
+    # which is how the gap survived: another artefact of the two paths having
+    # diverged. See Pipeline_Never_Ran.
+    repo_dir: Optional[str] = None
     device: str = "auto"
     # fp16 halves memory and is visually lossless for alpha.
     half: bool = True
