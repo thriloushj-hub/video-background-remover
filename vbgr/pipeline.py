@@ -38,7 +38,7 @@ from .detect import Detection, PersonDetector, held_props, select_person_boxes
 from .engines.base import MattingEngine, build_engine
 from .gate import QualityGate
 from .reid import IdentityBank, FeatureExtractor, uncovered_boxes
-from .seed import SAM3Seeder, build_seed
+from .seed import SAM3Seeder, build_seed, build_seeder
 
 
 # --------------------------------------------------------------------------- #
@@ -101,7 +101,7 @@ class Pipeline:
         self.require_commercial = require_commercial
         self._engine: Optional[MattingEngine] = None
         self._detector: Optional[PersonDetector] = None
-        self._seeder: Optional[SAM3Seeder] = None
+        self._seeder = None
         self._flow = motion.FlowEstimator(cfg.motion.flow_method,
                                           cfg.motion.flow_scale_short_side)
 
@@ -131,14 +131,14 @@ class Pipeline:
         return self._detector
 
     @property
-    def seeder(self) -> SAM3Seeder:
+    def seeder(self):
+        """The configured seeder -- Mask R-CNN by default (5.1k).
+
+        The SAM 3 path is still selectable via ``cfg.seed.backend``, but it
+        has never loaded: see ``SeedSAM._ensure`` for the two reasons.
+        """
         if self._seeder is None:
-            s = self.cfg.seed
-            self._seeder = SAM3Seeder(
-                mask_threshold=s.mask_threshold,
-                detect_threshold=s.detect_threshold,
-                interactive_mask_threshold=s.interactive_mask_threshold,
-                device=self.cfg.detect.device)
+            self._seeder = build_seeder(self.cfg.seed)
         return self._seeder
 
     # ------------------------------------------------------------------ #

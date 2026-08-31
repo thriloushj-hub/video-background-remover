@@ -311,6 +311,130 @@ def reopen_background_gaps(frame_bgr: np.ndarray,
     return out
 
 
+class MaskRCNNSeeder:
+    """Seed masks from torchvision Mask R-CNN. The default seeder.
+
+    Why this and not SAM 3
+    ----------------------
+    Two reasons, and the second is the real one.
+
+    First, **neither SAM 3 backend is loadable**: ``SAM("sam3.pt")`` raises
+    ``FileNotFoundError`` because those weights are not in ultralytics'
+    auto-download set and nothing in this project has ever shipped them, and
+    ``sam3.build_sam`` does not exist in the fork we install.  See
+    ``SeedSAM._ensure`` and Pipeline_Never_Ran.
+
+    Second, and more important: **this is where every validated seed in this
+    project came from.**  ``vbgr_bench.py`` has always seeded from Mask R-CNN
+    and never touched ``pipeline.py``, so the seed area gate (3.0), the
+    one-object-id-per-person fix (3.2a) and the nested-duplicate suppression
+    (3.2u) were all measured on these masks.  Using anything else in the
+    product would mean shipping a seeder nothing has ever been measured on.
+    Choosing this collapses the measured path and the shipped path into one.
+
+    Boxes still come from the pipeline's own detector (YOLO), so the gates keep
+    working exactly as tested; this class only answers "what is the mask inside
+    this box".  A requested box that no instance matches is **skipped with a
+    note, never filled with its rectangle** -- a rectangle seed quietly feeds
+    the tracker a slab of background, and this project has enough silent
+    failures.
+    """
+
+    def __init__(self, detector=None, score_min: float = 0.80,
+                 match_iou: float = 0.30, device: str = "auto"):
+        self._det = detector
+        self.score_min = score_min
+        self.match_iou = match_iou
+        self._device = device
+        self.backend = "maskrcnn"
+        self.notes: List[str] = []
+
+    def _ensure(self):
+        if self._det is not None:
+            return
+        import torch
+        import torchvision
+        from .engines.base import resolve_device
+        self.device = resolve_device(self._device)
+        m = torchvision.models.detection.maskrcnn_resnet50_fpn(
+            weights="DEFAULT").eval()
+        if self.device == "cuda":
+            m = m.cuda()
+        self._torch = torch
+        self._det = m
+
+    def _instances(self, frame_bgr: np.ndarray):
+        """(masks, boxes) for people above ``score_min``, at frame resolution.
+
+        A detector exposing ``instances(frame_bgr) -> (masks, boxes)`` is used
+        directly.  That hook exists so the matching logic below -- which is
+        where the real risk is -- can be tested without torch installed.
+        """
+        if callable(getattr(self._det, "instances", None)):
+            return self._det.instances(frame_bgr)
+        self._ensure()
+        import torch
+        rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+        t = torch.from_numpy(rgb).permute(2, 0, 1).float().div(255)
+        if getattr(self, "device", "cpu") == "cuda":
+            t = t.cuda()
+        with torch.no_grad():
+            o = self._det([t])[0]
+        sel = (o["labels"] == 1) & (o["scores"] > self.score_min)
+        masks = o["masks"][sel, 0].detach().cpu().numpy() > 0.5
+        boxes = o["boxes"][sel].detach().cpu().numpy()
+        return masks, boxes
+
+    def masks_from_boxes(self, frame_bgr: np.ndarray,
+                         boxes: Sequence[Box]) -> List[np.ndarray]:
+        if not boxes:
+            return []
+        self.notes = []
+        inst_masks, inst_boxes = self._instances(frame_bgr)
+        out = []
+        used = set()
+        for b in boxes:
+            best, best_iou = None, 0.0
+            for i, ib in enumerate(inst_boxes):
+                if i in used:
+                    continue
+                v = box_iou(tuple(map(float, ib)), tuple(map(float, b)))
+                if v > best_iou:
+                    best, best_iou = i, v
+            if best is None or best_iou < self.match_iou:
+                self.notes.append(
+                    f"no mask instance matched box {tuple(int(x) for x in b)} "
+                    f"(best IoU {best_iou:.2f} < {self.match_iou}); subject skipped")
+                continue
+            used.add(best)
+            out.append(inst_masks[best].astype(np.uint8))
+        return out
+
+    def masks_from_text(self, frame_bgr: np.ndarray, text: str = "person"):
+        raise NotImplementedError(
+            "Mask R-CNN has no text prompt; it is COCO-class only. "
+            "build_seed treats this as unavailable and notes it.")
+
+    def masks_from_points(self, frame_bgr: np.ndarray, *a, **k):
+        raise NotImplementedError(
+            "Mask R-CNN has no point prompt. build_seed notes it and carries on.")
+
+
+def build_seeder(cfg=None):
+    """Construct the configured seeder. Mask R-CNN by default -- see 5.1k."""
+    from .config import SeedConfig
+    cfg = cfg or SeedConfig()
+    backend = getattr(cfg, "backend", "maskrcnn")
+    if backend == "maskrcnn":
+        return MaskRCNNSeeder(score_min=getattr(cfg, "maskrcnn_score_min", 0.80),
+                              match_iou=getattr(cfg, "maskrcnn_match_iou", 0.30))
+    if backend == "sam3":
+        return SAM3Seeder(mask_threshold=cfg.mask_threshold,
+                          detect_threshold=cfg.detect_threshold,
+                          interactive_mask_threshold=cfg.interactive_mask_threshold)
+    raise ValueError(f"unknown seeder backend {backend!r}")
+
+
 # --------------------------------------------------------------------------- #
 # The full seed
 # --------------------------------------------------------------------------- #

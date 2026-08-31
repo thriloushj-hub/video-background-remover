@@ -93,7 +93,24 @@ class DetectConfig:
 
 @dataclass
 class SeedConfig:
-    """SAM 3 seeding of the first frame of each shot."""
+    """Seeding of the first frame of each shot.
+
+    ``backend`` is **maskrcnn** by default (decided 30 Aug, 5.1k). Two
+    reasons: neither SAM 3 backend is loadable -- ``sam3.pt`` is not in
+    ultralytics' auto-download set and ``sam3.build_sam`` does not exist in
+    the fork we install -- and, more importantly, Mask R-CNN is where **every
+    validated seed in this project came from**. ``vbgr_bench.py`` has always
+    seeded from it and never touched ``pipeline.py``, so the area gate (3.0),
+    one-object-id-per-person (3.2a) and nested-duplicate suppression (3.2u)
+    were all measured on these masks. See Pipeline_Never_Ran.
+    """
+    backend: Literal["maskrcnn", "sam3"] = "maskrcnn"
+    # Mask R-CNN seeding. Boxes still come from the pipeline's own detector,
+    # so the gates behave exactly as tested; the seeder only answers "what is
+    # the mask inside this box". A box no instance matches is skipped with a
+    # note rather than filled with its rectangle.
+    maskrcnn_score_min: float = 0.80
+    maskrcnn_match_iou: float = 0.30
     mask_threshold: float = 0.0
     detect_threshold: float = 0.35
     concept_text: str = "person"
