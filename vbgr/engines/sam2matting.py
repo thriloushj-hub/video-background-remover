@@ -288,11 +288,24 @@ class SAM2MattingEngine(MattingEngine):
         frame 0, and the frozen benchmark arm still does, so the numbers stay
         comparable.  See ``vbgr_bench.py --reseed``.
 
-        **NOT YET VERIFIED ON A GPU.**  The decision of *who* is new is
-        CPU-tested (``vbgr.detect.new_subjects``); this hook -- whether SAM2
-        propagates a mid-shot object the way the API documents -- has only
-        been read from the upstream signature, not run. Do not quote a
-        ``reseed`` column until a real run has produced one.
+        **THIS DOES NOT WORK ON THE CHOSEN MODEL.**  Run on an A100 on
+        29 Aug it raises::
+
+            TypeError: Sam3TrackerBase.track_step() got an unexpected
+            keyword argument 'gt_masks'
+
+        SAM2's documented API accepts ``add_new_mask`` on any frame before
+        propagation; the SAM3 tracker underneath this predictor does not --
+        it takes the prompt but its ``track_step`` signature has no slot for
+        the mask on a non-initial frame.  Read from the upstream signature it
+        looked fine, which is the fourth capability on this project that was
+        declared from the paper rather than checked against the object (see
+        Capability_Audit).
+
+        The path that is likely to work is a **second propagation pass**
+        seeded at the entrant's frame, unioned with the first -- which is a
+        rework, not a keyword fix.  Until then the caller catches the error
+        and keeps the off arm.
         """
         self._ensure()
         t = self._torch

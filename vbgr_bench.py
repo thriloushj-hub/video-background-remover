@@ -414,22 +414,29 @@ def main():
             r = {"off": score(A, len(seeds), object_areas=oa)}
             sheet(frames, A, f"{work}/sheet_off.jpg")
             if do_reseed:
-                # A SECOND ARM, not a replacement: the off arm above is
-                # byte-identical to every run before 29 Aug, so the frozen
-                # comparison survives while entrants finally get measured.
-                extra = reseed_scan(frames, A, det)
-                if extra:
-                    eng.reset()
-                    C = eng.matte(frames, seed_mask=None, seed_masks=seeds,
-                                  extra_seeds=extra)
-                    oc = getattr(eng, "object_areas", None)
-                    r["reseed"] = score(C, len(seeds) + len(extra),
-                                        object_areas=oc)
+                # A SECOND ARM, not a replacement, and it must never be able to
+                # take the off arm down with it.  On the 29 Aug run it did
+                # exactly that: the engine hook raised, the exception reached
+                # the outer handler, and butter and dance lost their *already
+                # computed* off rows to a failure in an arm flagged unverified.
+                # An experimental arm gets its own handler.
+                try:
+                    extra = reseed_scan(frames, A, det)
                     r["n_reseed"] = len(extra)
-                    sheet(frames, C, f"{work}/sheet_reseed.jpg")
-                    save_alphas(C, f"{work}/alpha_reseed")
-                else:
-                    r["n_reseed"] = 0
+                    if extra:
+                        eng.reset()
+                        C = eng.matte(frames, seed_mask=None, seed_masks=seeds,
+                                      extra_seeds=extra)
+                        oc = getattr(eng, "object_areas", None)
+                        r["reseed"] = score(C, len(seeds) + len(extra),
+                                            object_areas=oc)
+                        sheet(frames, C, f"{work}/sheet_reseed.jpg")
+                        save_alphas(C, f"{work}/alpha_reseed")
+                except Exception as e:                       # noqa: BLE001
+                    r["reseed_error"] = f"{type(e).__name__}: {e}"
+                    print(f"    reseed arm FAILED (off arm kept) -- "
+                          f"{r['reseed_error']}")
+                    eng.reset()
             if do_fix:
                 B = motion_fix(A, frames, eng)
                 # the motion fix reshapes the union, not the tracker's own

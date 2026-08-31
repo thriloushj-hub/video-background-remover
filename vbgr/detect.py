@@ -300,6 +300,17 @@ def new_subjects(masks: Sequence[np.ndarray],
     ``min_frame_frac`` drops specks, so a re-seed scan cannot inject noise as
     a subject.
 
+    .. warning::
+
+       **This is the per-scan test only, and it is not enough on its own.**
+       Measured on the GPU, 29 Aug: butter found **9** new subjects across
+       four scans where the truth is about three. The caller marks an accepted
+       person "claimed" with their mask at that frame, and by the next scan
+       they have *moved*, so the overlap against the stale mask is low and
+       they are accepted again -- roughly three people times three scans.
+       Suppressing a repeat needs the entrant actually tracked between scans,
+       not a frozen mask. Do not read a re-seed count as a headcount.
+
     Returns the indices into ``masks``, in the order given.
     """
     held = np.asarray(held_alpha, np.float32) > alpha_thresh
