@@ -37,7 +37,8 @@ from .config import Config
 from .detect import Detection, PersonDetector, held_props, select_person_boxes
 from .engines.base import MattingEngine, build_engine
 from .gate import QualityGate
-from .reid import IdentityBank, FeatureExtractor, uncovered_boxes
+from .reid import (IdentityBank, FeatureExtractor, uncovered_boxes,
+                   box_coverage)
 from .seed import SAM3Seeder, build_seed, build_seeder
 
 
@@ -346,6 +347,15 @@ class Pipeline:
             if unc:
                 pending[i] = unc
                 boxes_at[i] = kept
+                # Diagnostic only (3.3a).  A box is called "uncovered" on box
+                # fill, which is a function of pose, so print the number that
+                # made the decision -- a value just under max_overlap on a
+                # spread pose is a false positive, a value near 0 is a person
+                # the matte genuinely is not holding.
+                print(f"[reentry] f{i:>3} uncovered={len(unc)} "
+                      + " ".join(f"box{j}:cov={box_coverage(alphas[i], kept[j].box):.3f}"
+                                 f",box={tuple(int(v) for v in kept[j].box)}"
+                                 for j in unc), flush=True)
             # Bank embeddings of well-covered subjects so ReID has a reference.
             for j, d in enumerate(kept):
                 if j not in unc:
@@ -363,6 +373,8 @@ class Pipeline:
             if rev is not None:
                 alphas = np.maximum(alphas, rev)
                 rep.reentries += 1
+                print(f"[reentry] REVERSE pass fired, anchored at f{last}",
+                      flush=True)
 
         # --- 3. local bidirectional passes for the rest -------------------- #
         for i in sorted(pending):
@@ -373,6 +385,8 @@ class Pipeline:
                     lo, hi, arr = loc
                     alphas[lo:hi] = np.maximum(alphas[lo:hi], arr)
                     rep.reentries += 1
+                    print(f"[reentry] LOCAL pass fired at f{i} "
+                          f"(re-matted {lo}..{hi})", flush=True)
 
         assert len(alphas) == len(frames)
         return alphas, rep
