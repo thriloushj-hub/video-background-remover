@@ -7,7 +7,7 @@ next to the compositor makes the inverse relationship obvious.
 """
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 import cv2
 import numpy as np
@@ -39,6 +39,38 @@ def composite_over_image(frame_bgr: np.ndarray, alpha: np.ndarray,
     a = np.clip(alpha, 0, 1).astype(np.float32)[..., None]
     F = (foreground if foreground is not None else frame_bgr).astype(np.float32)
     return np.clip(a * F + (1 - a) * bg_bgr.astype(np.float32), 0, 255).astype(np.uint8)
+
+
+def composite_over_video(frames_bgr: Sequence[np.ndarray],
+                         alphas: Sequence[np.ndarray],
+                         bg_frames: Sequence[np.ndarray],
+                         foregrounds: Optional[Sequence[np.ndarray]] = None,
+                         loop: bool = True) -> List[np.ndarray]:
+    """Composite a shot over a moving background, frame by frame.
+
+    The still-image case already had ``composite_over_image``; this is the
+    other half of 4.2 (the image-video samples feature), and the part that had
+    no code at all.
+
+    ``bg_frames`` shorter than the shot is **looped** by default rather than
+    held on its last frame -- a frozen background behind a moving subject reads
+    as a bug, and silently shortening the output would be worse.  Each
+    background frame goes through the same ``_cover_resize`` as the still case,
+    so a background of a different aspect ratio is cropped, never stretched.
+
+    ``foregrounds`` should be the decontaminated F.  Compositing the *observed*
+    pixel is what produces a coloured fringe -- see decontaminate.py.
+    """
+    if len(alphas) != len(frames_bgr):
+        raise ValueError("one alpha per frame")
+    if not bg_frames:
+        raise ValueError("no background frames")
+    out = []
+    for i, (f, a) in enumerate(zip(frames_bgr, alphas)):
+        j = i % len(bg_frames) if loop else min(i, len(bg_frames) - 1)
+        F = foregrounds[i] if foregrounds is not None else None
+        out.append(composite_over_image(f, a, bg_frames[j], foreground=F))
+    return out
 
 
 def _cover_resize(img: np.ndarray, w: int, h: int) -> np.ndarray:
