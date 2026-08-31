@@ -70,8 +70,13 @@ def main(repo: str = ".") -> None:
 
     added = sorted(set(m) - before)
     dropped = sorted(before - set(m))
+    size = os.path.getsize(tmp)
     os.replace(tmp, dest)
-    print(f"{len(m)} entries, {os.path.getsize(dest)/1e6:.2f} MB")
+    # Size is read BEFORE the replace: on the mounted filesystem this session
+    # uses, os.stat on the destination immediately after os.replace can raise
+    # FileNotFoundError from a stale directory cache even though the replace
+    # succeeded.  The number is the same either way.
+    print(f"{len(m)} entries, {size/1e6:.2f} MB")
     if added:
         print("  added:  " + ", ".join(added))
     if dropped:
