@@ -4,9 +4,17 @@ Everything needed is in **`vbgr2/bench_payload/`** — four zips, ~21 MB total:
 `vbgr_code.zip`, `clips_1.zip`, `clips_2.zip`, `clips_3.zip`.
 They are already split under Colab's 10 MB per-file upload limit.
 
-**`vbgr_code.zip` was rebuilt 25 Aug** and matches the committed repo exactly
-(34 entries, verified file-by-file by hash). If you change any tracked source
-file, rebuild it before running or the VM will quietly run the old code.
+**Rebuild `vbgr_code.zip` with `python bench/build_code_zip.py`** — never by
+hand. It enumerates `vbgr/`, `bench/`, `tests/` and the root scripts, verifies
+content *and* membership, and prints what it added or dropped. As of 31 Aug it
+is **52 entries**.
+
+The hand-built version it replaced refreshed the contents of a frozen 34-entry
+list and verified those entries by hash — a check that cannot notice a file
+that *should* be present and is not. On 31 Aug the VM reported **118 tests
+passed** against 126 locally, because a test written after the list was frozen
+had never shipped. No `vbgr/` source file was ever missing, so nothing measured
+was invalidated, but only by luck.
 
 ## Why this exists as a bundle
 
@@ -56,6 +64,10 @@ human action per fresh VM. See `vbgr_colab_access.md`.
    skips and you see 75 instead of 85.
 
        !cd /content && pip -q install pytest && python -m pytest tests/ -q
+
+   Expect **138 passed** as of 31 Aug. A lower number usually means an old
+   `vbgr_code.zip` unpacked — check the count before trusting the run, not
+   after.
 
    Expect **85 passed**.
 
@@ -144,6 +156,27 @@ rather than tuning: whether the runner should abort on a suppressed cut, and
 whether the detector should be firing at 62 at all.
 
 ---
+
+## If you are new: the whole chain, in order
+
+This runbook covers the **benchmark** path only. The full set of documents a
+new person needs, in reading order:
+
+1. **`HANDOFF.md`** (vault) — what the project is, how it is worked, where
+   everything lives, the gotchas, and the decisions outstanding. Start here.
+2. **`tracker.md`** (vault, Notion-synced) — task state and the daily log.
+3. **This runbook** — the 15-clip benchmark, cell by cell.
+4. **`Bench_Run_Cells.md`** (vault) — the same thing as a paste-and-go Colab
+   checklist with an expected output at every step, plus **§7b** for the
+   product pipeline (`vbgr.cli run`), **§7c** for a single clip, and **§7d**
+   for the `| grep` buffering trap.
+5. **`Colab_Runbook.md`** and **`vbgr_colab_access.md`** (vault) — the account
+   split, and how code gets onto a VM without a file picker.
+
+**Two things are not in any document and have to be handed over directly:** the
+Colab Pro+ login that owns the GPU, and the v1 delivery folder (the `_matte.mp4`
+files), which lives outside the repo and is what every v1 baseline is computed
+from.
 
 ## Which clip set is canonical (settled 25 Aug)
 
