@@ -22,3 +22,25 @@ clips/interview.mp4
 clips/jensen.mp4
 clips/eddie.mp4
 clips/leo.mp4
+# ---------------------------------------------------------------------------
+# Added 2 Sep 2026, and this is the "good reason" the header asks for.
+#
+# These three were in the v1 delivery all along and had never been in this
+# list. Every "no test case exists in the set" conclusion this project has
+# drawn -- 3.3 above all -- was measured on a set that excluded them.
+#
+# The addition is ADDITIVE: the fifteen rows above are untouched, so every run
+# from 20 Aug onward stays comparable. All three align source-to-matte at the
+# same index (NCC 0.972 / 0.982 / 0.994) and host a verified single-shot
+# 72-frame window. See Unused_Delivery_Clips.md.
+#
+#   dlh       full-body, 60 fps, fast arm motion. A motion-blur case that is
+#             not a two-person fight, which is all ipman could offer.
+#   es2       flying curly hair against a flat wall. The best edge-detail case
+#             in the delivery, and edge quality is what Runbo said RVM lacked.
+#   bilibili  14 cuts, a different subject per shot. The only clip besides mv
+#             that tests per-shot re-seeding, and unlike mv its shots are long
+#             enough to host a clean window.
+clips/dlh.mp4
+clips/es2.mp4
+clips/bilibili.mp4
