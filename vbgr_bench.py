@@ -3,6 +3,7 @@
     !cd /content && python vbgr_bench.py            # all clips, no motion fix
     !cd /content && python vbgr_bench.py --fix      # ... with the motion fix too
     !cd /content && python vbgr_bench.py --product  # ... and through pipeline.py
+    !cd /content && python vbgr_bench.py --product --outputs   # ... writing watchable video
     !cd /content && python vbgr_bench.py 1917 dance # just these
 
 ``--product`` is the one that matters.  Every other arm calls the engine
@@ -386,7 +387,7 @@ def sheet(frames, alphas, path, cols=6, rows=4):
 
 # ---- main ---------------------------------------------------------------- #
 
-def product_arm(clip_path, work, name):
+def product_arm(clip_path, work, name, output_mode="alpha"):
     """Run the window through `pipeline.py` -- the code that would actually ship.
 
     Why this exists
@@ -413,10 +414,14 @@ def product_arm(clip_path, work, name):
     cfg = Config()
     cfg.io.input_dir = os.path.dirname(clip_path)
     cfg.io.output_dir = f"{work}/product_out"
-    # alpha only: the composite and the WebM are exercised by
-    # bench/check_alpha_output.py and bench/check_composite_and_audio.py, and
-    # writing all three per clip adds encode time to every run for nothing.
-    cfg.io.output_mode = "alpha"
+    # "alpha" is the default because the composite and the WebM are already
+    # exercised by bench/check_alpha_output.py and check_composite_and_audio.py,
+    # and writing all three per clip adds encode time to every run for nothing.
+    #
+    # "all" is for when the run has to produce something a person can WATCH.
+    # Numbers are what the benchmark is for, but a client who named his failure
+    # cases by looking at clips is going to judge this by looking at clips.
+    cfg.io.output_mode = output_mode
     cfg.matting.engine = "sam2matting"
     cfg.matting.repo_dir = REPO
     cfg.matting.checkpoint = CKPT
@@ -457,6 +462,9 @@ def main():
     do_fix = "--fix" in sys.argv
     do_reseed = "--reseed" in sys.argv
     do_product = "--product" in sys.argv
+    # Write watchable output (green / alpha / transparent webm) from the
+    # product arm, not just the alpha stack the metrics need.
+    do_outputs = "--outputs" in sys.argv
     clips = args or [c for c in V1
                      if V1[c] and V1[c].get("trusted", True)
                      and V1[c].get("window") is not None]
@@ -531,7 +539,8 @@ def main():
                 # may be able to void the verified arm.
                 try:
                     P, psc, pmeta = product_arm(
-                        os.path.join(WIN, cand[0]), work, nm)
+                        os.path.join(WIN, cand[0]), work, nm,
+                        output_mode=("all" if do_outputs else "alpha"))
                     r["product"] = psc
                     r["product_meta"] = pmeta
                     save_alphas(P, f"{work}/alpha_product")
@@ -551,6 +560,13 @@ def main():
                 # the tracker is holding
                 r["on"] = score(B, len(seeds), object_areas=oa)
                 sheet(frames, B, f"{work}/sheet_on.jpg")
+                # The ON arm's alphas have never been written to disk, and that
+                # is exactly what blocks the edge comparison against RVM: every
+                # edge number we have is from the fix-OFF arm, while the fix is
+                # measured at edge_soft +0.1098 (3.6). Without these there is no
+                # way to ask whether v2's boundary is softer than RVM's with the
+                # fix on, which is the open question this run exists to close.
+                save_alphas(B, f"{work}/alpha_on")
             save_alphas(A, f"{work}/alpha")
             r["n_seed"] = len(seeds)
             r["alpha_dir"] = f"{nm}/alpha"
