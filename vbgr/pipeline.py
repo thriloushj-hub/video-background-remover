@@ -338,6 +338,32 @@ class Pipeline:
         boxes_at: Dict[int, List] = {}
         for i in range(0, len(frames), max(1, cfg.reid.scan_every)):
             people, _ = self.detector.detect(frames[i])
+            # The scan inherits the seed gate ON PURPOSE.  This is 3.3g, and
+            # it was decided rather than inherited: 2 Sep 2026, "accept the
+            # frame-0 cast".
+            #
+            # The cost is known and accepted.  Anyone the gate excludes can
+            # never be recovered here however plainly the matte is missing
+            # them -- on `dance` the detector is 90% sure about a person the
+            # matte covers 0.4% of, at every scan frame, and she is dropped on
+            # the height gate at 0.549 against a 0.60 threshold.  She is the
+            # one real miss in the whole set.
+            #
+            # The alternatives were measured and are worse.  Relaxing the gate
+            # cannot work: the right answer is not monotonic in the number the
+            # gate uses (1917's soldier 0.634 = drop, dance's dancer 0.549 =
+            # keep, leo's bystander 0.473 = drop).  Scanning ungated recovers
+            # people we deliberately exclude -- 1917's 11 trench soldiers and
+            # leo's 6 bystander detections, all >=0.80 confidence, at every
+            # scan.  And five candidate cast-vs-bystander signals were tested
+            # (persistence, absolute motion, motion ratio, depth gap, motion
+            # synchrony with and without camera compensation); every one puts
+            # at least one keep between two drops.  See
+            # Subject_Selection_Signals.md.
+            #
+            # So v2's cast is whoever clears the gate at frame 0.  If entrants
+            # ever have to be recovered, the answer is a user-facing control,
+            # not a threshold.
             kept, _ = select_person_boxes(
                 people, W, H, cfg.detect.person_rel_size_min,
                 cfg.detect.box_score_ratio,
