@@ -138,3 +138,44 @@ def test_the_split_is_announced_not_silent():
     p = _pipe()
     _alphas, rep = _run(p)
     assert any("one per person" in n for n in rep.notes)
+
+
+# --------------------------------------------------------------------------- #
+# The recovery passes, which the 2 Sep fix missed the first time
+# --------------------------------------------------------------------------- #
+
+def test_directional_pass_seeds_per_person():
+    """The 2 Sep run logged 'seeding 1 object(s) (auto-split)' from here.
+
+    The forward matte had the fix and the recovery passes did not, because the
+    seeding block had been copied rather than shared. All three now go through
+    one helper.
+    """
+    p = _pipe()
+    out = p._directional_pass([_frame() for _ in range(T)], anchor=0,
+                              backward=False)
+    assert out is not None
+    assert p._engine.seen["seed_masks"] is not None
+    assert len(p._engine.seen["seed_masks"]) == 2
+
+
+def test_local_pass_seeds_per_person():
+    p = _pipe()
+    p.cfg.reid.scan_every = 2
+    out = p._local_pass([_frame() for _ in range(T)], anchor=2, radius=1)
+    assert out is not None
+    assert p._engine.seen["seed_masks"] is not None
+    assert len(p._engine.seen["seed_masks"]) == 2
+
+
+def test_helper_falls_back_to_the_fused_mask_for_one_person():
+    """Single-subject clips must behave exactly as before."""
+    p = _pipe()
+    seed = SeedResult(mask=_person(40, 105), kept=[],
+                      per_person=[_person(40, 105)])
+    a, n = p._matte_by_person([_frame() for _ in range(T)], seed,
+                              seed.mask, 10)
+    assert n == 1
+    assert p._engine.seen["seed_masks"] is None
+    assert p._engine.seen["seed_mask"] is not None
+    assert len(a) == T

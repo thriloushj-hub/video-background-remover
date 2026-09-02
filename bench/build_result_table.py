@@ -51,12 +51,23 @@ def build(run):
          "|---|---|---|---|---|---|---|"]
     C = ["| clip | edge_soft off | edge_soft on | sharpness off | sharpness on |",
          "|---|---|---|---|---|"]
+    # The product arm, when the run has one. It is kept in its own table rather
+    # than as extra columns because it is a different code path, not a
+    # different setting: mixing them in one row invites reading across a
+    # boundary that took three weeks to notice was there.
+    D = ["| clip | v1 subj f0 | product seeds | mean_area v1 | bench | product "
+         "| product as % of v1 | subj_lost_at | shots | s |",
+         "|---|---|---|---|---|---|---|---|---|"]
     tally = {"shell_max": 0.0, "solo": [], "hole": [], "jit_v2_worse": 0,
-             "cv_v2_better": 0, "n": 0}
+             "cv_v2_better": 0, "n": 0, "product": 0, "product_failed": []}
     for c in clips:
         r, b, dd = rows[c], v1.get(c) or {}, dis.get(c, {})
         h = hs.get(c, {})
         tally["n"] += 1
+        if "product" in r:
+            tally["product"] += 1
+        elif "product_error" in r:
+            tally["product_failed"].append(c)
         tally["shell_max"] = max(tally["shell_max"], h.get("halo_shell", 0.0))
         if h.get("halo_solo", 0) > 0.02:
             tally["solo"].append(c)
@@ -73,10 +84,28 @@ def build(run):
         B.append(f"| {c} | {fmt(dd.get('area_cv_v1'))} | {fmt(dd.get('area_cv_v2'))} | "
                  f"{fmt(dd.get('area_jitter_v1'))} | {fmt(dd.get('area_jitter_v2'))} | "
                  f"{b.get('dropouts','--')} | {r['off']['subj_lost_at']} |")
+        if "product" in r:
+            pr, pm = r["product"], r.get("product_meta", {})
+            ma1 = b.get("mean_area")
+            pct = ("--" if not ma1 else
+                   f"{100.0 * pr['mean_area'] / max(ma1, 1e-9):.1f}%")
+            D.append(f"| {c} | {b.get('subjects_f0','--')} | "
+                     f"{pm.get('n_seed','--')} | {fmt(ma1)} | "
+                     f"{fmt(r['off']['mean_area'])} | {fmt(pr['mean_area'])} | "
+                     f"{pct} | {pr['subj_lost_at']} | "
+                     f"{pm.get('n_shots','--')} | {pm.get('seconds','--')} |")
+        elif "product_error" in r:
+            D.append(f"| {c} | -- | -- | -- | -- | FAILED | -- | "
+                     f"{r['product_error'][:60]} | -- | -- |")
         if "on" in r:
             C.append(f"| {c} | {fmt(r['off']['edge_soft'])} | {fmt(r['on']['edge_soft'])} | "
                      f"{fmt(r['off']['sharpness'])} | {fmt(r['on']['sharpness'])} |")
     out += ["### Coverage and correctness", ""] + A + [""]
+    if len(D) > 2:
+        out += ["### The product path (`pipeline.py`), which is what ships", "",
+                "`product as % of v1` is coverage, not quality -- v1 "
+                "over-includes, so 100% is not the target. Read it beside the "
+                "halo/hole split.", ""] + D + [""]
     out += ["### Stability", ""] + B + [""]
     if len(C) > 2:
         out += ["### Ablation: the motion fix, v2 against v2", ""] + C + [""]
@@ -100,4 +129,11 @@ if __name__ == "__main__":
     print(f"clips with hole_big >= 0.01: {tally['hole'] or 'none'}")
     print(f"v2 jitterier than v1 on {tally['jit_v2_worse']} of {tally['n']}; "
           f"v2 lower area_cv on {tally['cv_v2_better']} of {tally['n']}")
+    if tally["product"] or tally["product_failed"]:
+        print(f"product arm: {tally['product']} of {tally['n']} scored"
+              + (f"; FAILED on {tally['product_failed']}"
+                 if tally["product_failed"] else ""))
+    else:
+        print("product arm: not run -- every row above is the benchmark path, "
+              "which on multi-subject footage covers less than the shipped one")
     print(f"\nmd -> {path}")

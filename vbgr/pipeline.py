@@ -249,15 +249,10 @@ class Pipeline:
         if self.engine.is_streaming:
             alphas, rep = self._matte_streaming(frames, seed_mask, rep)
         else:
-            objs = split_by_person(seed_mask, seed.per_person)
-            if objs:
-                rep.notes.append(f"seeded {len(objs)} objects, one per person")
-                alphas = self.engine.matte(
-                    frames, seed_mask=None, seed_masks=objs,
-                    n_warmup=cfg.matting.n_warmup_static)
-            else:
-                alphas = self.engine.matte(frames, seed_mask,
-                                           n_warmup=cfg.matting.n_warmup_static)
+            alphas, n_obj = self._matte_by_person(
+                frames, seed, seed_mask, cfg.matting.n_warmup_static)
+            if n_obj > 1:
+                rep.notes.append(f"seeded {n_obj} objects, one per person")
             # Per-subject coverage straight from the tracker.  Without it
             # subj_lost_at cannot be measured on this path at all, and the
             # metric that guesses from connected components is the one 3.2s
@@ -492,6 +487,25 @@ class Pipeline:
         assert len(alphas) == len(frames)
         return alphas, rep
 
+    def _matte_by_person(self, frames, seed, seed_mask, n_warmup):
+        """Matte a sequence, one obj_id per person wherever there is more
+        than one.
+
+        This exists as a helper rather than inline because the 2 Sep fix
+        originally went into the forward matte only, and the run that same day
+        logged `seeding 1 object(s) (auto-split)` from the recovery passes --
+        the same defect one level down, in code that had been copied rather
+        than shared. Three call sites, one implementation.
+
+        Falls back to the fused mask when there is nothing to split, which is
+        every single-subject clip and is exactly the old behaviour.
+        """
+        objs = split_by_person(seed_mask, seed.per_person)
+        if objs:
+            return self.engine.matte(frames, seed_mask=None, seed_masks=objs,
+                                     n_warmup=n_warmup), len(objs)
+        return self.engine.matte(frames, seed_mask, n_warmup=n_warmup), 1
+
     def _directional_pass(self, frames, anchor: int, backward: bool
                           ) -> Optional[np.ndarray]:
         cfg = self.cfg
@@ -511,7 +525,8 @@ class Pipeline:
 
         seq = frames[anchor::-1] if backward else frames[anchor:]
         self.engine.reset()
-        a = self.engine.matte(seq, m, n_warmup=cfg.matting.n_warmup_static)
+        a, _ = self._matte_by_person(seq, seed, m,
+                                     cfg.matting.n_warmup_static)
         self.engine.reset()
 
         out = np.zeros((len(frames), H, W), np.float32)
@@ -542,11 +557,12 @@ class Pipeline:
         hi = min(len(frames), anchor + cfg.reid.scan_every + radius)
 
         self.engine.reset()
-        fwd = self.engine.matte(frames[anchor:hi], m,
-                                n_warmup=cfg.matting.n_warmup_static)
+        fwd, _ = self._matte_by_person(frames[anchor:hi], seed, m,
+                                       cfg.matting.n_warmup_static)
         self.engine.reset()
-        bwd = self.engine.matte(frames[anchor:lo - 1 if lo > 0 else None:-1], m,
-                                n_warmup=cfg.matting.n_warmup_static)
+        bwd, _ = self._matte_by_person(
+            frames[anchor:lo - 1 if lo > 0 else None:-1], seed, m,
+            cfg.matting.n_warmup_static)
         self.engine.reset()
 
         arr = np.zeros((hi - lo, H, W), np.float32)

@@ -63,12 +63,21 @@ def v1_alphas(clip, lo, hi, key):
     return out
 
 
+ARM = "alpha"
+V1_ALPHA_DIR = None
+
+
 def v2_alphas(clip, shape):
-    fs = sorted(glob.glob(f"{RUN}/bench_out/{clip}/alpha/*.png"))
+    fs = sorted(glob.glob(f"{RUN}/bench_out/{clip}/{ARM}/*.png"))
     H, W = shape
     return [cv2.resize(cv2.imread(p, 0), (W, H),
                        interpolation=cv2.INTER_LINEAR).astype(np.float32) / 255
             for p in fs]
+
+
+def v1_alphas_png(clip):
+    fs = sorted(glob.glob(os.path.join(V1_ALPHA_DIR, clip, "*.png")))
+    return [cv2.imread(p, 0).astype(np.float32) / 255 for p in fs]
 
 
 def split(clip):
@@ -82,10 +91,38 @@ def split(clip):
         print(f"{clip:12s} SKIPPED -- v1 baseline is marked untrusted")
         return None
     lo, hi = row["window"]
-    a1 = v1_alphas(clip, lo, hi, row["green_bgr"])
-    if not a1:
+    if V1_ALPHA_DIR:
+        # Both sides at the persisted <=960px representation. This is how the
+        # 2 Sep product run had to be scored -- the alphas were on a Colab VM
+        # and v1 was carried up rather than the other way round.
+        #
+        # It does NOT reproduce the full-resolution split, and the difference
+        # is bounded rather than vague. Measured on run_2026-08-30, the two
+        # paths agree to within 0.0002 on the twelve clips with NO standalone
+        # halo component, and differ only on the three that have one:
+        #
+        #     1917    shell 0.0238 -> 0.0344   solo 0.0899 -> 0.0794
+        #     butter  shell 0.0186 -> 0.0374   solo 0.5222 -> 0.5032
+        #     dance   shell 0.0413 -> 0.0605   solo 0.0545 -> 0.0354
+        #
+        # Total halo is preserved (butter 0.5408 vs 0.5406); what moves is the
+        # split, because shrinking both sides changes which components touch
+        # v2's foreground. Connectivity is a property of the resolution you
+        # measure at, so neither is wrong. Compare arms measured the same way,
+        # and never a number from this path against one from the other.
+        a1 = v1_alphas_png(clip)
+        if not a1:
+            print(f"{clip:12s} SKIPPED -- no exported v1 alphas")
+            return None
+        a2 = v2_alphas(clip, a1[0].shape)
+    else:
+        a1 = v1_alphas(clip, lo, hi, row["green_bgr"])
+        if not a1:
+            return None
+        a2 = v2_alphas(clip, a1[0].shape)
+    if not a2:
+        print(f"{clip:12s} SKIPPED -- no persisted alphas in {ARM}/")
         return None
-    a2 = v2_alphas(clip, a1[0].shape)
     n = min(len(a1), len(a2))
     return halo_split(a1[:n], a2[:n])
 
@@ -101,10 +138,19 @@ if __name__ == "__main__":
     # on exactly the clip the fix was for.
     ap.add_argument("--run", default=RUN,
                     help="run directory containing bench_out/<clip>/alpha")
+    ap.add_argument("--arm", default="alpha",
+                    help="alpha | alpha_product | alpha_reseed")
+    ap.add_argument("--v1-alpha-dir", default=None,
+                    help="exported v1 alpha PNGs "
+                         "(bench/export_v1_window_alphas.py); scores both "
+                         "sides at <=960px, which is NOT the full-res split")
     ap.add_argument("--out")
     args = ap.parse_args()
     RUN = os.path.abspath(args.run)
-    out_path = args.out or os.path.join(RUN, "halo_split.json")
+    ARM = args.arm
+    V1_ALPHA_DIR = args.v1_alpha_dir
+    name = "halo_split.json" if ARM == "alpha" else f"halo_split_{ARM}.json"
+    out_path = args.out or os.path.join(RUN, name)
     got = {}
     if os.path.exists(out_path):
         got = json.load(open(out_path))

@@ -122,6 +122,21 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", required=True, help="run dir holding bench_out/")
     ap.add_argument("--source", choices=["alpha", "sheet"], default="alpha")
+    # Which persisted arm to score. The runner writes "alpha" for the plain
+    # benchmark arm, "alpha_product" for the pipeline.py arm (--product) and
+    # "alpha_reseed" for the entrant arm. They are separate directories on
+    # purpose: an arm must never be able to overwrite another's pixels.
+    ap.add_argument("--arm", default="alpha",
+                    help="alpha | alpha_product | alpha_reseed")
+    # v1 read from pre-exported PNGs rather than the delivery MP4s. This is how
+    # the 2 Sep product run was scored: the product alphas were 240 MB on a
+    # Colab VM and could not be brought down, so v1's window alphas were
+    # carried up instead. See bench/export_v1_window_alphas.py.
+    # NOTE: shell values from this path differ slightly from the MP4 path,
+    # because the resize happens at a different point. Do not mix them.
+    ap.add_argument("--v1-alpha-dir", default=None,
+                    help="directory of <clip>/NNNN.png v1 alphas "
+                         "(from export_v1_window_alphas.py)")
     ap.add_argument("--v1-dir", default=os.environ.get("VBGR_V1_DIR", DEFAULT_V1_DIR))
     ap.add_argument("--baselines",
                     default=os.path.join(_ROOT, "bench", "results",
@@ -133,9 +148,12 @@ def main():
     root = a.run if os.path.basename(a.run) == "bench_out" else os.path.join(a.run, "bench_out")
     if not os.path.isdir(root):
         raise SystemExit(f"no bench_out under {a.run}")
-    if not os.path.isdir(a.v1_dir):
+    if not a.v1_alpha_dir and not os.path.isdir(a.v1_dir):
         raise SystemExit(f"v1 delivery folder not found: {a.v1_dir}\n"
-                         f"pass --v1-dir or set VBGR_V1_DIR")
+                         f"pass --v1-dir, set VBGR_V1_DIR, or use "
+                         f"--v1-alpha-dir with exported PNGs")
+    if a.v1_alpha_dir and not os.path.isdir(a.v1_alpha_dir):
+        raise SystemExit(f"no v1 alpha directory at {a.v1_alpha_dir}")
 
     rows, skipped = {}, {}
     for clip, v in V1.items():
@@ -152,10 +170,11 @@ def main():
             continue
         ignore = None
         if a.source == "alpha":
-            A2 = alphas_from_dir(os.path.join(d, "alpha"))
+            A2 = alphas_from_dir(os.path.join(d, a.arm))
             if not A2:
-                skipped[clip] = ("no persisted alphas -- this run predates "
-                                 "save_alphas(); re-run --source sheet")
+                skipped[clip] = (f"no persisted alphas in {a.arm}/ -- either "
+                                 f"this run predates save_alphas() or that arm "
+                                 f"was not run")
                 continue
         else:
             A2, ignore = alphas_from_sheet(os.path.join(d, "sheet_off.jpg"))
@@ -164,10 +183,17 @@ def main():
                 continue
 
         lo, hi = v["window"]
-        A1full = v1_window_alphas(a.v1_dir, clip, lo, hi, tuple(v["green_bgr"]))
-        if not A1full:
-            skipped[clip] = "no v1 matte file"
-            continue
+        if a.v1_alpha_dir:
+            A1full = alphas_from_dir(os.path.join(a.v1_alpha_dir, clip))
+            if not A1full:
+                skipped[clip] = f"no exported v1 alphas under {a.v1_alpha_dir}"
+                continue
+        else:
+            A1full = v1_window_alphas(a.v1_dir, clip, lo, hi,
+                                      tuple(v["green_bgr"]))
+            if not A1full:
+                skipped[clip] = "no v1 matte file"
+                continue
         # the sheet samples the window; the persisted alphas are every frame
         idx = (np.linspace(0, len(A1full) - 1, len(A2)).astype(int)
                if len(A2) != len(A1full) else np.arange(len(A1full)))
@@ -203,8 +229,11 @@ def main():
     for c, why in skipped.items():
         print(f"{c:12}skipped -- {why}")
 
-    out = a.out or os.path.join(a.run, f"coverage_disagreement_{a.source}.json")
-    json.dump({"source": a.source, "rows": rows, "skipped": skipped},
+    suffix = a.source if a.arm == "alpha" else f"{a.source}_{a.arm}"
+    out = a.out or os.path.join(a.run, f"coverage_disagreement_{suffix}.json")
+    json.dump({"source": a.source, "arm": a.arm,
+               "v1_from": "png" if a.v1_alpha_dir else "mp4",
+               "rows": rows, "skipped": skipped},
               open(out, "w"), indent=2)
     print(f"\njson -> {out}")
     print("halo high + hole ~0 is the only shape that supports 'v2 beats v1'. "
