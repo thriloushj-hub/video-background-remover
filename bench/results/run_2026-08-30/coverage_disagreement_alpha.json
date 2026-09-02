@@ -9,6 +9,7 @@
       "excess_rim_px": 0.0,
       "area_cv_v1": 0.193,
       "area_cv_v2": 0.2039,
+      "area_jitter_v1": 0.0132,
       "area_jitter_v2": 0.0159,
       "verdict": "agree"
     },
@@ -20,6 +21,7 @@
       "excess_rim_px": 0.34,
       "area_cv_v1": 0.124,
       "area_cv_v2": 0.1179,
+      "area_jitter_v1": 0.035,
       "area_jitter_v2": 0.0374,
       "verdict": "agree"
     },
@@ -31,6 +33,7 @@
       "excess_rim_px": 0.01,
       "area_cv_v1": 0.5697,
       "area_cv_v2": 0.7445,
+      "area_jitter_v1": 0.0443,
       "area_jitter_v2": 0.0467,
       "verdict": "v1 over-inclusive"
     },
@@ -42,6 +45,7 @@
       "excess_rim_px": 0.02,
       "area_cv_v1": 0.0974,
       "area_cv_v2": 0.1017,
+      "area_jitter_v1": 0.0118,
       "area_jitter_v2": 0.0123,
       "verdict": "agree"
     },
@@ -53,6 +57,7 @@
       "excess_rim_px": 0.04,
       "area_cv_v1": 0.0597,
       "area_cv_v2": 0.06,
+      "area_jitter_v1": 0.0348,
       "area_jitter_v2": 0.0348,
       "verdict": "agree"
     },
@@ -64,6 +69,7 @@
       "excess_rim_px": 0.05,
       "area_cv_v1": 0.0441,
       "area_cv_v2": 0.043,
+      "area_jitter_v1": 0.0187,
       "area_jitter_v2": 0.0176,
       "verdict": "agree"
     },
@@ -75,6 +81,7 @@
       "excess_rim_px": 0.03,
       "area_cv_v1": 0.1476,
       "area_cv_v2": 0.1514,
+      "area_jitter_v1": 0.0298,
       "area_jitter_v2": 0.0292,
       "verdict": "agree"
     },
@@ -86,6 +93,7 @@
       "excess_rim_px": 0.0,
       "area_cv_v1": 0.0101,
       "area_cv_v2": 0.0124,
+      "area_jitter_v1": 0.0011,
       "area_jitter_v2": 0.0041,
       "verdict": "agree"
     },
@@ -97,6 +105,7 @@
       "excess_rim_px": 0.0,
       "area_cv_v1": 0.0117,
       "area_cv_v2": 0.013,
+      "area_jitter_v1": 0.0026,
       "area_jitter_v2": 0.0087,
       "verdict": "agree"
     },
@@ -108,6 +117,7 @@
       "excess_rim_px": 0.0,
       "area_cv_v1": 0.0111,
       "area_cv_v2": 0.0125,
+      "area_jitter_v1": 0.0023,
       "area_jitter_v2": 0.0045,
       "verdict": "agree"
     },
@@ -119,6 +129,7 @@
       "excess_rim_px": 0.0,
       "area_cv_v1": 0.0026,
       "area_cv_v2": 0.006,
+      "area_jitter_v1": 0.0009,
       "area_jitter_v2": 0.0039,
       "verdict": "agree"
     },
@@ -130,6 +141,7 @@
       "excess_rim_px": 0.0,
       "area_cv_v1": 0.0135,
       "area_cv_v2": 0.0176,
+      "area_jitter_v1": 0.0014,
       "area_jitter_v2": 0.0046,
       "verdict": "agree"
     },
@@ -141,6 +153,7 @@
       "excess_rim_px": 0.02,
       "area_cv_v1": 0.0167,
       "area_cv_v2": 0.0176,
+      "area_jitter_v1": 0.0023,
       "area_jitter_v2": 0.0037,
       "verdict": "agree"
     },
@@ -152,6 +165,7 @@
       "excess_rim_px": 0.0,
       "area_cv_v1": 0.0166,
       "area_cv_v2": 0.0257,
+      "area_jitter_v1": 0.003,
       "area_jitter_v2": 0.0086,
       "verdict": "agree"
     },
@@ -163,6 +177,7 @@
       "excess_rim_px": 0.13,
       "area_cv_v1": 0.1179,
       "area_cv_v2": 0.1233,
+      "area_jitter_v1": 0.0142,
       "area_jitter_v2": 0.015,
       "verdict": "agree"
     }

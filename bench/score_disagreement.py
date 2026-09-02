@@ -177,12 +177,19 @@ def main():
         r = coverage_disagreement(A1, A2, ignore=ignore)
         r["area_cv_v1"] = round(area_stability(A1), 4)
         r["area_cv_v2"] = round(area_stability(A2), 4)
+        # v1 was never given a jitter column, so the only like-for-like
+        # stability comparison in the whole project rested on ipman's area_cv.
+        # area_jitter is a function of the same area series area_cv is, so it
+        # survives v1's green recovery for exactly the same reason area_cv
+        # does -- and unlike area_cv it does not read butter's camera
+        # pull-back as flicker.
+        r["area_jitter_v1"] = round(area_jitter(A1), 4)
         r["area_jitter_v2"] = round(area_jitter(A2), 4)
         r["verdict"] = verdict(r, a.source)
         rows[clip] = r
 
     hdr = (f"{'clip':12}{'halo':>7}{'hole':>7}{'holeBig':>9}{'excess':>8}"
-           f"{'rim px':>8}{'cv_v1':>8}{'cv_v2':>8}{'jitter':>8}  verdict")
+           f"{'rim px':>8}{'cv_v1':>8}{'cv_v2':>8}{'jit_v1':>8}{'jit_v2':>8}  verdict")
     print(f"\nsource: {a.source}" + ("   (hole is indicative only)"
                                      if a.source == "sheet" else ""))
     print(hdr)
@@ -191,7 +198,8 @@ def main():
         print(f"{c:12}{r['halo_frac']:7.3f}{r['hole_frac']:7.3f}{r['hole_big']:9.3f}"
               f"{r['excess_frac']:8.3f}{r['excess_rim_px']:8.2f}"
               f"{r['area_cv_v1']:8.3f}{r['area_cv_v2']:8.3f}"
-              f"{r['area_jitter_v2']:8.3f}  {r['verdict']}")
+              f"{r['area_jitter_v1']:8.3f}{r['area_jitter_v2']:8.3f}"
+              f"  {r['verdict']}")
     for c, why in skipped.items():
         print(f"{c:12}skipped -- {why}")
 
