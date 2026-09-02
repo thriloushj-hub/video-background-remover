@@ -1,0 +1,54 @@
+PRODUCT PATH (pipeline.py) vs v1 -- Colab A100, 2026-09-02, 15/15, 0 failures
+clip         subj  mean_area v1    bench  product  v1 cov%       lost  shots      s
+1917            1        0.3147   0.2802   0.2801    89.0%      never      1    164
+ipman           2        0.2874   0.2780   0.2796    97.3%      never      1    161
+butter          4        0.2011   0.0901   0.1976    98.3%      never      1    189
+dance           4        0.1306   0.1185   0.1184    90.7%      never      1    206
+dance2          1        0.0611   0.0605   0.0611   100.0%      never      1    190
+dance3          2        0.0830   0.0822   0.0825    99.4%      never      1    197
+shakira         3        0.1536   0.1517   0.1527    99.4%      never      1    204
+tryguys         3        0.6267   0.6182   0.6220    99.3%      never      1    191
+codylexi        2        0.4812   0.4720   0.4771    99.1%      never      1    184
+asianboss2      1        0.2777   0.2739   0.2759    99.4%      never      1    182
+microsoft       2        0.3937   0.3793   0.3851    97.8%      never      1    164
+interview       2        0.4787   0.4653   0.4695    98.1%      never      1    184
+jensen          1        0.2495   0.2481   0.2490    99.8%      never      1    182
+eddie           1        0.3836   0.3746   0.3796    99.0%      never      1    136
+leo             1        0.1166   0.1158   0.1164    99.8%      never      1    156
+
+v1 cov% is the product path's coverage as a share of v1's. NOT a quality score.
+
+Per-clip product scores (score()):
+1917       area_cv 0.2018 edge_soft 0.7322 sharpness 0.6142 mean_area 0.2801 lost never
+ipman      area_cv 0.1164 edge_soft 0.7202 sharpness 0.5897 mean_area 0.2796 lost never
+butter     area_cv 0.5807 edge_soft 0.5875 sharpness 0.6342 mean_area 0.1976 lost never
+dance      area_cv 0.1042 edge_soft 0.7328 sharpness 0.6162 mean_area 0.1184 lost never
+dance2     area_cv 0.0585 edge_soft 0.6837 sharpness 0.6203 mean_area 0.0611 lost never
+dance3     area_cv 0.0427 edge_soft 0.6590 sharpness 0.6268 mean_area 0.0825 lost never
+shakira    area_cv 0.1507 edge_soft 0.8118 sharpness 0.5582 mean_area 0.1527 lost never
+tryguys    area_cv 0.0104 edge_soft 0.6442 sharpness 0.6330 mean_area 0.6220 lost never
+codylexi   area_cv 0.0109 edge_soft 0.6267 sharpness 0.6361 mean_area 0.4771 lost never
+asianboss2 area_cv 0.0112 edge_soft 0.5569 sharpness 0.6292 mean_area 0.2759 lost never
+microsoft  area_cv 0.0051 edge_soft 0.5658 sharpness 0.6335 mean_area 0.3851 lost never
+interview  area_cv 0.0155 edge_soft 0.5765 sharpness 0.6406 mean_area 0.4695 lost never
+jensen     area_cv 0.0166 edge_soft 0.5168 sharpness 0.6509 mean_area 0.2490 lost never
+eddie      area_cv 0.0210 edge_soft 0.7174 sharpness 0.6205 mean_area 0.3796 lost never
+leo        area_cv 0.1221 edge_soft 0.6330 sharpness 0.6370 mean_area 0.1164 lost never
+
+BENCHMARK ARM (off) -- reproduces run_2026-08-30 exactly on all 15
+clip        subj  cv_v1    cv_v2   ma_v1    ma_v2  drop_v1 drop_v2 lost
+1917           1  0.1938  0.2039  0.3147  0.2802   0   0  never
+ipman          2  0.1240  0.1179  0.2874  0.2780   0   0  never
+butter         4  0.5765  0.7448  0.2011  0.0901   0   0  never
+dance          4  0.0989  0.1017  0.1306  0.1185   0   0  never
+dance2         1  0.0588  0.0599  0.0611  0.0605   0   0  never
+dance3         2  0.0428  0.0430  0.0830  0.0822   0   0  never
+shakira        3  0.1500  0.1513  0.1536  0.1517   0   0  never
+tryguys        3  0.0103  0.0124  0.6267  0.6182   0   0  never
+codylexi       2  0.0116  0.0130  0.4812  0.4720   0   0  never
+asianboss2     1  0.0112  0.0124  0.2777  0.2739   0   0  never
+microsoft      2  0.0026  0.0060  0.3937  0.3793   0   0  never
+interview      2  0.0135  0.0176  0.4787  0.4653   0   0  never
+jensen         1  0.0174  0.0177  0.2495  0.2481   0   0  never
+eddie          1  0.0166  0.0257  0.3836  0.3746   0   0  never
+leo            1  0.1184  0.1234  0.1166  0.1158   0   0  never
