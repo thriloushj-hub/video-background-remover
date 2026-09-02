@@ -71,3 +71,16 @@ _to_delete/
 # which is tracked; the encodes are a build artifact and are not.
 bench_payload/
 *.zip
+
+# --- Outgoing bundles (added 2026-09-02) ---
+# _to_send/ is a packaged drop for the client: zips of things already tracked
+# elsewhere in this repo. Regenerable, and ~32 MB.
+_to_send/
+
+# --- Extracted source frames (added 2026-09-02) ---
+# bench_out/<clip>/frames/ is 1,080 JPEGs of the CLIENT'S source footage,
+# extracted by load_frames() with ffmpeg and regenerable in seconds from the
+# window clips. The persisted ALPHAS next to them stay tracked deliberately --
+# two of this project's corrections came off those files with no GPU -- but the
+# raw frames are the client's material and do not belong in version control.
+bench/results/**/frames/

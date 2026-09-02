@@ -13,19 +13,42 @@ python -m vbgr.cli run -i clips/ -o results/
 
 ---
 
-## Start here: what I'd actually do first
+## Where this stands — 2 September 2026
+
+The pipeline runs end to end on all fifteen frozen clips in one command: zero
+failures, zero bad frames, ~180 s per 72-frame clip on an A100. It writes real
+per-pixel alpha, a transparent WebM that is actually transparent (15/15
+round-tripped at alpha correlation 1.0000), a composite over a still or moving
+background, and carries the source audio through with the matte bit-identical.
+
+**On the metrics that can be compared to v1 it does not beat v1, and does not
+lose to it.** Nothing tears, no subject is lost on any clip, and the boundary
+disagreement is a sub-pixel rim across the set. The comparison against the
+*other* previous attempt (RVM, re-run here on the same windows) found something
+more useful than a table: **the metric suite cannot separate the two previous
+attempts either**, which is why "measurably better" has been so hard to
+demonstrate.
+
+Full write-ups are in the project notes; the numbers are in `bench/results/`.
+
+## Start here
 
 1. **Run `python -m vbgr.cli selftest`.** ~15 seconds, no GPU, no downloads. If
    it fails, don't start a batch.
-2. **Read `docs/BUGS.md`.** Six defects in the v1 outputs that have nothing to
+2. **Run `python -m pytest tests/ -q`.** Expect **158 passed**, about twenty
+   seconds. A lower number means a stale copy of the source.
+3. **Read `docs/BUGS.md`.** Six defects in the v1 outputs that have nothing to
    do with model quality and would survive any model swap. One of them — `ipman`
    is missing 176 of its 501 frames — means part of what reads as "the matting
    broke on fast motion" in that clip is actually *missing frames*.
-3. **Read `docs/LICENSING.md` and decide.** You said undecided. Both top engines
-   are non-commercial, and so is YOLOv8 in effect (AGPL). This decision changes
-   step 4, so make it before you spend GPU hours, not after.
 4. **Baseline, then change one thing at a time.** `bench/` exists so that
    "better" is a number and not a vibe.
+
+> **Licensing was answered on 2 Sep: aim for the best model, treat licensing as
+> a commercial question later.** `docs/LICENSING.md` still holds the facts, and
+> they have not changed — the two highest-quality engines are non-commercial and
+> the default detector is AGPL. The detector is swappable in about twenty lines
+> whenever that becomes live.
 
 ---
 

@@ -46,7 +46,10 @@ from bench.metrics import area_stability, dropout_events            # noqa: E402
 from vbgr.compose import alpha_from_greenscreen                     # noqa: E402
 from vbgr.shots import compute_scene_cuts                           # noqa: E402
 
-DEFAULT_V1_DIR = r"C:\Users\Tirloosh\Downloads\output vids -20260807T044446Z-1-001\output vids"
+# The v1 delivery folder. Machine-specific, so it comes from the environment:
+# set VBGR_V1_DIR, or pass --v1-dir. Nothing here should hard-code one
+# person's home directory -- this repo gets read by other people.
+DEFAULT_V1_DIR = os.environ.get("VBGR_V1_DIR", "")
 GREEN = (151, 253, 119)
 WIN = 72
 SMALL_W = 640
