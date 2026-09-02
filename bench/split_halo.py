@@ -72,8 +72,14 @@ def v2_alphas(clip, shape):
 
 
 def split(clip):
-    row = BASE[clip]
+    row = BASE.get(clip)
+    # mv has no windowed baseline and cannot have one (22 cuts in 588 frames),
+    # so its entry is null.  Skip it loudly rather than crashing on --all.
+    if row is None:
+        print(f"{clip:12s} SKIPPED -- no v1 window baseline exists for this clip")
+        return None
     if not row.get("trusted", True):
+        print(f"{clip:12s} SKIPPED -- v1 baseline is marked untrusted")
         return None
     lo, hi = row["window"]
     a1 = v1_alphas(clip, lo, hi, row["green_bgr"])
@@ -88,11 +94,20 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--clip")
     ap.add_argument("--all", action="store_true")
-    ap.add_argument("--out", default=os.path.join(RUN, "halo_split.json"))
+    # The split has to be recomputed per run, not reused across runs: any
+    # change that moves the seeds moves v2's silhouette, and the shell/solo
+    # boundary is drawn against that silhouette.  The 30 Aug duplicate-seed
+    # fix moved interview, so reusing the 27 Aug file would have been wrong
+    # on exactly the clip the fix was for.
+    ap.add_argument("--run", default=RUN,
+                    help="run directory containing bench_out/<clip>/alpha")
+    ap.add_argument("--out")
     args = ap.parse_args()
+    RUN = os.path.abspath(args.run)
+    out_path = args.out or os.path.join(RUN, "halo_split.json")
     got = {}
-    if os.path.exists(args.out):
-        got = json.load(open(args.out))
+    if os.path.exists(out_path):
+        got = json.load(open(out_path))
     clips = sorted(BASE) if args.all else [args.clip]
     for c in clips:
         if c in got:
@@ -104,4 +119,4 @@ if __name__ == "__main__":
         print(f"{c:12s} halo {r['halo_frac']:.4f} = shell {r['halo_shell']:.4f}"
               f" + solo {r['halo_solo']:.4f}  ({r['solo_components']} solo comps,"
               f" biggest {r['solo_max_frame_frac']:.4f} of frame)")
-        json.dump(got, open(args.out, "w"), indent=1)
+        json.dump(got, open(out_path, "w"), indent=1)

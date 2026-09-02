@@ -1,0 +1,107 @@
+{
+ "1917": {
+  "halo_frac": 0.1137,
+  "halo_shell": 0.0238,
+  "halo_solo": 0.0899,
+  "solo_components": 63,
+  "solo_max_frame_frac": 0.0397
+ },
+ "asianboss2": {
+  "halo_frac": 0.0112,
+  "halo_shell": 0.0112,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "butter": {
+  "halo_frac": 0.5407,
+  "halo_shell": 0.0186,
+  "halo_solo": 0.5222,
+  "solo_components": 158,
+  "solo_max_frame_frac": 0.1635
+ },
+ "codylexi": {
+  "halo_frac": 0.0123,
+  "halo_shell": 0.0123,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "dance": {
+  "halo_frac": 0.0958,
+  "halo_shell": 0.0413,
+  "halo_solo": 0.0545,
+  "solo_components": 46,
+  "solo_max_frame_frac": 0.0137
+ },
+ "dance2": {
+  "halo_frac": 0.0208,
+  "halo_shell": 0.0208,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "dance3": {
+  "halo_frac": 0.0216,
+  "halo_shell": 0.0216,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "eddie": {
+  "halo_frac": 0.0124,
+  "halo_shell": 0.0124,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "interview": {
+  "halo_frac": 0.0123,
+  "halo_shell": 0.0122,
+  "halo_solo": 0.0001,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "ipman": {
+  "halo_frac": 0.0231,
+  "halo_shell": 0.0231,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "jensen": {
+  "halo_frac": 0.0082,
+  "halo_shell": 0.0082,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "leo": {
+  "halo_frac": 0.014,
+  "halo_shell": 0.014,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "microsoft": {
+  "halo_frac": 0.0084,
+  "halo_shell": 0.0084,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "shakira": {
+  "halo_frac": 0.0169,
+  "halo_shell": 0.0169,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "tryguys": {
+  "halo_frac": 0.0067,
+  "halo_shell": 0.0067,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ }
+}
