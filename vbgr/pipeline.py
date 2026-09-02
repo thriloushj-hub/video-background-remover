@@ -39,7 +39,7 @@ from .engines.base import MattingEngine, build_engine
 from .gate import QualityGate
 from .reid import (IdentityBank, FeatureExtractor, uncovered_boxes,
                    box_coverage, mask_coverage, confirm_uncovered)
-from .seed import SAM3Seeder, build_seed, build_seeder
+from .seed import SAM3Seeder, build_seed, build_seeder, split_by_person
 
 
 # --------------------------------------------------------------------------- #
@@ -60,6 +60,10 @@ class ShotReport:
     reentries: int = 0
     high_motion_frames: int = 0
     notes: List[str] = field(default_factory=list)
+    # (T, K) per-subject coverage from the tracker, when the engine reports it.
+    # This is what subj_lost_at has to be measured from; counting connected
+    # components in the union instead is what 3.2s removed.
+    object_areas: Optional[List[List[float]]] = None
 
 
 @dataclass
@@ -74,6 +78,14 @@ class ClipReport:
 
     # {kwarg: feature} for anything the engine declared but could not deliver
     degraded: Dict[str, Optional[str]] = field(default_factory=dict)
+
+    # The matte itself, only when run_clip was asked for it. Off by default
+    # because a 72-frame 1080p float32 stack is ~600 MB and a batch would hold
+    # one per clip. The benchmark's product arm needs it: scoring the written
+    # WebM instead means decoding VP9 alpha, and ffmpeg's default decoder drops
+    # that silently (exit 0, every pixel opaque), which is indistinguishable
+    # from the v1 defect we are measuring against.
+    alphas: Optional[np.ndarray] = field(default=None, repr=False)
 
     def summary(self) -> str:
         bf = sum(s.bad_frames for s in self.shots)
@@ -148,7 +160,8 @@ class Pipeline:
     # Clip
     # ------------------------------------------------------------------ #
 
-    def run_clip(self, path: str, out_dir: Optional[str] = None) -> ClipReport:
+    def run_clip(self, path: str, out_dir: Optional[str] = None,
+                 keep_alphas: bool = False) -> ClipReport:
         t0 = time.time()
         cfg = self.cfg
         out_dir = out_dir or cfg.io.output_dir
@@ -182,6 +195,8 @@ class Pipeline:
 
         # -- output ------------------------------------------------------ #
         rep.outputs = self._write_outputs(name, path, frames, alphas, info, out_dir)
+        if keep_alphas:
+            rep.alphas = alphas
         rep.degraded = self.engine.degraded
         rep.seconds = time.time() - t0
         if cfg.verbose:
@@ -217,12 +232,39 @@ class Pipeline:
         rep.notes.extend(seed.notes)
 
         # ---- forward matting --------------------------------------------- #
+        # One obj_id per kept person, which is 3.2a and is the single largest
+        # correctness fix in this project -- and until 2 Sep the product path
+        # did not have it.  It handed the engine one fused mask, so the engine
+        # fell back to splitting by connected component, and two people who
+        # touch are one component: codylexi is two subjects and ONE component
+        # for its entire window.  A VOS tracker given one identity holding two
+        # blobs converges onto one of them, which is how ipman lost a fighter
+        # at frame 7 before 3.2a.
+        #
+        # split_by_person partitions the *refined* union by nearest person
+        # seed, so nothing the seed stage added (text prompt, interactive head,
+        # held props, hole filling) is dropped on the way.  It returns [] when
+        # there is nothing to split, and then this behaves exactly as before.
         self.engine.reset()
         if self.engine.is_streaming:
             alphas, rep = self._matte_streaming(frames, seed_mask, rep)
         else:
-            alphas = self.engine.matte(frames, seed_mask,
-                                       n_warmup=cfg.matting.n_warmup_static)
+            objs = split_by_person(seed_mask, seed.per_person)
+            if objs:
+                rep.notes.append(f"seeded {len(objs)} objects, one per person")
+                alphas = self.engine.matte(
+                    frames, seed_mask=None, seed_masks=objs,
+                    n_warmup=cfg.matting.n_warmup_static)
+            else:
+                alphas = self.engine.matte(frames, seed_mask,
+                                           n_warmup=cfg.matting.n_warmup_static)
+            # Per-subject coverage straight from the tracker.  Without it
+            # subj_lost_at cannot be measured on this path at all, and the
+            # metric that guesses from connected components is the one 3.2s
+            # had to delete for reporting losses on four healthy clips.
+            oa = getattr(self.engine, "object_areas", None)
+            if oa is not None:
+                rep.object_areas = np.asarray(oa, np.float32).tolist()
 
         # ---- reverse pass for late entrants ------------------------------- #
         if cfg.reid.enabled:

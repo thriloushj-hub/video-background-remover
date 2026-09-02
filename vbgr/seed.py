@@ -491,3 +491,56 @@ def build_seed(frame_bgr: np.ndarray,
     per_person = [(m > 0).astype(np.uint8) for m in concept]
     return SeedResult(mask=base.astype(np.uint8), kept=list(kept),
                       per_person=per_person, notes=notes)
+
+
+def split_by_person(fused: np.ndarray,
+                    per_person: Sequence[np.ndarray],
+                    min_frac: float = 0.002) -> List[np.ndarray]:
+    """Partition a fused seed into one mask per person, losing no pixels.
+
+    Why this is not ``SAM2MattingEngine.split_objects``
+    --------------------------------------------------
+    That function splits the union by *connected component*, and its docstring
+    argues two people who touch can share an object because "the tracker sees
+    one blob anyway".  That is exactly the claim 3.2a disproved: given one
+    identity holding two blobs, the tracker converged onto one ipman fighter at
+    frame 7 and never recovered the other.  And touching is not rare -- 3.2s
+    found ``codylexi`` is two subjects and **one** connected component for the
+    entire window, with shakira, dance and tryguys close behind.
+
+    Why not just pass ``SeedResult.per_person``
+    -------------------------------------------
+    Because it is only the concept masks.  ``build_seed`` then ORs in the text
+    prompt, the interactive head, held props and hole filling, so
+    ``union(per_person)`` is a strict subset of ``SeedResult.mask``.  Handing
+    the engine ``per_person`` directly would silently drop every one of those
+    additions.
+
+    So this assigns each pixel of the fused mask to the nearest person seed --
+    a nearest-label partition, not a re-segmentation.  The union of the result
+    is the fused mask exactly, and each person keeps their own ``obj_id``
+    whether or not they touch a neighbour.
+
+    Returns ``[]`` when there is nothing to split (no seeds, or one), which the
+    caller should read as "use the fused mask as-is".
+    """
+    f = (np.asarray(fused) > (127 if np.max(fused) > 1.5 else 0.5))
+    people = [np.asarray(m) > 0 for m in per_person]
+    people = [m for m in people if m.any()]
+    if len(people) < 2 or not f.any():
+        return []
+
+    # distance from every pixel to each person's own seed
+    dists = np.stack([
+        cv2.distanceTransform((~m).astype(np.uint8), cv2.DIST_L2, 3)
+        for m in people])
+    owner = np.argmin(dists, axis=0)
+
+    out, thr = [], min_frac * f.size
+    for i in range(len(people)):
+        m = f & (owner == i)
+        if m.sum() >= thr:
+            out.append(m.astype(np.uint8) * 255)
+    # A partition that collapsed to one object is not a split; say so by
+    # returning nothing rather than handing back a relabelled union.
+    return out if len(out) >= 2 else []

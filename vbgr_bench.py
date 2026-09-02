@@ -2,7 +2,16 @@
 
     !cd /content && python vbgr_bench.py            # all clips, no motion fix
     !cd /content && python vbgr_bench.py --fix      # ... with the motion fix too
+    !cd /content && python vbgr_bench.py --product  # ... and through pipeline.py
     !cd /content && python vbgr_bench.py 1917 dance # just these
+
+``--product`` is the one that matters.  Every other arm calls the engine
+directly, so shots, entrant recovery, track health, decontamination and output
+writing are all absent from the measurement.  On butter that is `mean_area`
+0.0901 measured against 0.1974 shipped, with v1 at 0.2011 -- the harness was
+scoring 45% of v1's coverage where the product scores 98%.  Arms are additive
+and independent: ``--product`` writes ``rows[clip]["product"]`` beside the
+existing ``off``, and a failure in it can never take ``off`` down with it.
 
 Needs the v4 notebook cells 1-3 (repos + checkpoints) and the window clips in
 /content/win/.
@@ -104,10 +113,25 @@ def n_subjects(a, min_frac=0.002):
     return int(sum(1 for i in range(1, n) if s[i, 4] >= min_frac * a.size))
 
 
+# Distinct from None ("held all 72 frames") because the two used to be the
+# same value and printed as the same word. See subject_loss.
+UNMEASURED = "unmeasured"
+
+
 def subject_loss(A, n_seed, object_areas=None, alive_frac=0.25, min_frac=1e-4):
     """Frame after which the matte stops holding all ``n_seed`` subjects.
 
-    Returns ``(lost_at_or_None, per_frame_component_count)``.
+    Returns ``(verdict, per_frame_component_count)`` where verdict is an int
+    frame index, ``None`` for "held all the way", or the string ``UNMEASURED``
+    for "there was nothing to measure with".
+
+    **Those last two are not the same thing and used to be.**  Both came back
+    as ``None`` and ``score`` printed both as ``never``, so an arm with no
+    per-object areas -- the product path, which fuses its seeds -- would have
+    reported a clean pass on all fifteen clips without measuring anything.
+    That is the same shape as ``dropouts`` scoring 0 for a subject lost
+    permanently: a metric that cannot fire reading as a metric that did not
+    need to.
 
     **This used to count connected components and that was wrong.**  Two people
     standing shoulder to shoulder are one component, so the metric fired on
@@ -132,24 +156,24 @@ def subject_loss(A, n_seed, object_areas=None, alive_frac=0.25, min_frac=1e-4):
     share; a subject that merely gets smaller with everyone else does not.
 
     Without ``object_areas`` there is no way to tell a merge from a loss, so
-    the fallback refuses to guess and returns None rather than the old false
-    positive.  A wrong 'never' is a missing alarm; a wrong frame number is an
-    alarm that sent three people to look at healthy footage.
+    the fallback refuses to guess and returns UNMEASURED rather than the old
+    false positive.  A wrong 'never' is a missing alarm; a wrong frame number
+    is an alarm that sent three people to look at healthy footage.
     """
     k = [n_subjects(a) for a in A]
     if object_areas is None:
-        return None, k
+        return UNMEASURED, k
 
     oa = np.asarray(object_areas, np.float32)
     if oa.ndim != 2 or oa.shape[0] != len(A) or oa.shape[1] != n_seed:
-        return None, k
+        return UNMEASURED, k
 
     # carry the last measured row across frames the predictor never returned
     for t in range(len(oa)):
         if np.isnan(oa[t]).any() and t:
             oa[t] = np.where(np.isnan(oa[t]), oa[t - 1], oa[t])
     if np.isnan(oa).any():
-        return None, k
+        return UNMEASURED, k
 
     total = oa.sum(axis=1, keepdims=True)
     alive_anywhere = (total[:, 0] > min_frac)
@@ -157,7 +181,7 @@ def subject_loss(A, n_seed, object_areas=None, alive_frac=0.25, min_frac=1e-4):
         share = np.where(total > 0, oa / total, 0.0)
 
     if not alive_anywhere[0]:
-        return None, k                        # nothing seeded to lose
+        return UNMEASURED, k                  # nothing seeded to lose
     floor = share[0] * alive_frac
     held = (share >= floor).all(axis=1) & alive_anywhere
     last = max((i for i, v in enumerate(held) if v), default=-1)
@@ -174,6 +198,7 @@ def score(A, n_seed, cuts=(), object_areas=None):
                 dropouts=dropout_events(list(A), cuts=list(cuts))[0],
                 mean_area=round(float(frac.mean()), 4),
                 subj_lost_at=("never" if lost is None else lost))
+
 
 
 # ---- per clip ------------------------------------------------------------ #
@@ -361,6 +386,67 @@ def sheet(frames, alphas, path, cols=6, rows=4):
 
 # ---- main ---------------------------------------------------------------- #
 
+def product_arm(clip_path, work, name):
+    """Run the window through `pipeline.py` -- the code that would actually ship.
+
+    Why this exists
+    ---------------
+    Every v2-vs-v1 number this project has produced came from this file
+    calling the engine directly.  `vbgr_bench.py` has never touched
+    `pipeline.py`, so shots, re-seeding, track health, entrant recovery,
+    decontamination and output writing were all absent from the measurement --
+    and on butter that is the difference between `mean_area` 0.0901 and
+    0.1974 against v1's 0.2011.  The measured path covered 45% of v1 there;
+    the shipped path covers 98%.
+
+    So this arm is not a nicety.  Until it runs, no row in the result table is
+    a product number on multi-subject footage, and the honest reading of the
+    whole benchmark is "v2 as handicapped by its own harness".
+
+    Scored with the same `score()` as every other arm, off the alphas the
+    pipeline actually produced, so the columns are comparable by construction
+    rather than by assertion.
+    """
+    from vbgr.config import Config
+    from vbgr.pipeline import Pipeline
+
+    cfg = Config()
+    cfg.io.input_dir = os.path.dirname(clip_path)
+    cfg.io.output_dir = f"{work}/product_out"
+    # alpha only: the composite and the WebM are exercised by
+    # bench/check_alpha_output.py and bench/check_composite_and_audio.py, and
+    # writing all three per clip adds encode time to every run for nothing.
+    cfg.io.output_mode = "alpha"
+    cfg.matting.engine = "sam2matting"
+    cfg.matting.repo_dir = REPO
+    cfg.matting.checkpoint = CKPT
+    cfg.matting.device = "cuda"
+    cfg.verbose = True
+
+    pipe = Pipeline(cfg)
+    rep = pipe.run_clip(clip_path, keep_alphas=True)
+    A = [np.asarray(a, np.float32) for a in rep.alphas]
+
+    # Per-subject areas come back per shot. Every benchmark window is a single
+    # shot by construction (cut_guard refuses otherwise), so there is exactly
+    # one to take -- but assert rather than assume, because "every window is
+    # one shot" is a property of the window cutting, not of this function.
+    oa, n_seed = None, sum(sh.n_kept for sh in rep.shots)
+    if len(rep.shots) == 1 and rep.shots[0].object_areas is not None:
+        oa = rep.shots[0].object_areas
+    sc = score(A, n_seed, object_areas=oa)
+    meta = dict(n_seed=n_seed,
+                n_shots=len(rep.shots),
+                seconds=round(rep.seconds, 1),
+                bad_frames=sum(sh.bad_frames for sh in rep.shots),
+                reseeds=sum(sh.reseeds for sh in rep.shots),
+                reentries=sum(sh.reentries for sh in rep.shots),
+                high_motion=sum(sh.high_motion_frames for sh in rep.shots),
+                notes=[n for sh in rep.shots for n in sh.notes],
+                degraded=dict(rep.degraded))
+    return A, sc, meta
+
+
 def main():
     if not V1:
         raise SystemExit(
@@ -370,6 +456,7 @@ def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     do_fix = "--fix" in sys.argv
     do_reseed = "--reseed" in sys.argv
+    do_product = "--product" in sys.argv
     clips = args or [c for c in V1
                      if V1[c] and V1[c].get("trusted", True)
                      and V1[c].get("window") is not None]
@@ -437,6 +524,26 @@ def main():
                     print(f"    reseed arm FAILED (off arm kept) -- "
                           f"{r['reseed_error']}")
                     eng.reset()
+            if do_product:
+                # Its own handler, always. On 30 Aug the reseed arm raised
+                # inside the clip's main try and took butter's and dance's
+                # already-computed off rows down with it. Nothing unverified
+                # may be able to void the verified arm.
+                try:
+                    P, psc, pmeta = product_arm(
+                        os.path.join(WIN, cand[0]), work, nm)
+                    r["product"] = psc
+                    r["product_meta"] = pmeta
+                    save_alphas(P, f"{work}/alpha_product")
+                    sheet(frames, P, f"{work}/sheet_product.jpg")
+                    print(f"    product: {psc}")
+                    print(f"    product meta: {pmeta}")
+                except Exception as e:                       # noqa: BLE001
+                    r["product_error"] = f"{type(e).__name__}: {e}"
+                    print(f"    product arm FAILED (other arms kept) -- "
+                          f"{r['product_error']}")
+                    traceback.print_exc()
+                eng.reset()
             if do_fix:
                 B = motion_fix(A, frames, eng)
                 # the motion fix reshapes the union, not the tracker's own
@@ -472,6 +579,28 @@ def main():
         print(f"{nm:12}{r['n_seed']:>5}{v1['area_cv']:>12.4f}{o['area_cv']:>9.4f}"
               f"{v1['mean_area']:>14.4f}{o['mean_area']:>9.4f}"
               f"{v1['dropouts']:>9}{o['dropouts']:>5}{str(o['subj_lost_at']):>7}")
+    if any("product" in r or "product_error" in r for r in rows.values()):
+        print("\n" + "=" * 104)
+        print("PRODUCT PATH (pipeline.py) vs v1 -- the numbers that describe "
+              "what would actually ship")
+        print("=" * 104)
+        ph = (f"{'clip':12}{'subj':>5}{'mean_area v1':>14}{'bench':>9}"
+              f"{'product':>9}{'v1 cov%':>9}{'lost':>11}{'shots':>7}{'s':>7}")
+        print(ph); print("-" * 104)
+        for nm, r in rows.items():
+            if "product" not in r:
+                if "product_error" in r:
+                    print(f"{nm:12}  FAILED -- {r['product_error']}")
+                continue
+            p, m, v1 = r["product"], r["product_meta"], V1[nm]
+            cov = 100.0 * p["mean_area"] / max(v1["mean_area"], 1e-9)
+            print(f"{nm:12}{m['n_seed']:>5}{v1['mean_area']:>14.4f}"
+                  f"{r['off']['mean_area']:>9.4f}{p['mean_area']:>9.4f}"
+                  f"{cov:>8.1f}%{str(p['subj_lost_at']):>11}"
+                  f"{m['n_shots']:>7}{m['seconds']:>7.0f}")
+        print("\nv1 cov% is the product path's coverage as a share of v1's. It "
+              "is NOT a quality score -- v1 over-includes, so 100% is not the "
+              "target and neither is more. Read it beside the halo/hole split.")
     if failed:
         print("\nFAILED:")
         for k, v in failed.items():

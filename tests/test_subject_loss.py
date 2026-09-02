@@ -107,17 +107,31 @@ def test_shrink_past_the_floor_is_a_loss():
 
 
 def test_no_object_areas_refuses_to_guess():
-    """Without per-object data a merge and a loss are indistinguishable."""
+    """Without per-object data a merge and a loss are indistinguishable.
+
+    And it must say so, not say 'never'. Those were the same value until
+    2 Sep 2026, which would have let the product arm -- which fuses its seeds
+    and so has no per-object areas -- report a clean pass on all fifteen clips
+    without measuring anything.
+    """
     A = _frames_two_blobs(lambda t: 0)
     lost, k = bench.subject_loss(A, K, object_areas=None)
-    assert lost is None
+    assert lost == bench.UNMEASURED
+    assert lost is not None, "unmeasured must not collapse back onto 'never'"
     assert len(k) == T
+
+
+def test_unmeasured_does_not_print_as_never():
+    A = _frames_two_blobs(lambda t: 0)
+    assert bench.score(A, K)["subj_lost_at"] == bench.UNMEASURED
+    held = np.full((T, K), 0.06, np.float32)
+    assert bench.score(A, K, object_areas=held)["subj_lost_at"] == "never"
 
 
 def test_wrong_shaped_areas_refuse_to_guess():
     A = _frames_two_blobs(lambda t: 30)
     lost, _ = bench.subject_loss(A, K, object_areas=np.zeros((T, K + 1)))
-    assert lost is None
+    assert lost == bench.UNMEASURED
 
 
 def test_nan_rows_are_carried_not_counted():
