@@ -1,0 +1,125 @@
+{
+ "arm": "alpha",
+ "rows": {
+  "1917": {
+   "soft_rvm": 0.83,
+   "soft_v2": 0.4677,
+   "sharp_rvm": 0.9721,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.04533,
+   "share_v2": 0.01273
+  },
+  "asianboss2": {
+   "soft_rvm": 0.6784,
+   "soft_v2": 0.5522,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.01639,
+   "share_v2": 0.01175
+  },
+  "butter": {
+   "soft_rvm": 0.6202,
+   "soft_v2": 0.471,
+   "sharp_rvm": 0.9998,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.07489,
+   "share_v2": 0.01816
+  },
+  "codylexi": {
+   "soft_rvm": 0.7679,
+   "soft_v2": 0.5819,
+   "sharp_rvm": 0.9987,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.02642,
+   "share_v2": 0.02051
+  },
+  "dance": {
+   "soft_rvm": 0.5857,
+   "soft_v2": 0.4593,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.04058,
+   "share_v2": 0.02095
+  },
+  "dance2": {
+   "soft_rvm": 0.656,
+   "soft_v2": 0.5641,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.01329,
+   "share_v2": 0.00964
+  },
+  "dance3": {
+   "soft_rvm": 0.5569,
+   "soft_v2": 0.5089,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.02222,
+   "share_v2": 0.01763
+  },
+  "eddie": {
+   "soft_rvm": 0.9006,
+   "soft_v2": 0.62,
+   "sharp_rvm": 0.9954,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.02543,
+   "share_v2": 0.01833
+  },
+  "interview": {
+   "soft_rvm": 0.7372,
+   "soft_v2": 0.5373,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.03407,
+   "share_v2": 0.02513
+  },
+  "ipman": {
+   "soft_rvm": 0.7543,
+   "soft_v2": 0.5945,
+   "sharp_rvm": 0.9799,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.05334,
+   "share_v2": 0.02635
+  },
+  "jensen": {
+   "soft_rvm": 0.6394,
+   "soft_v2": 0.4608,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.01248,
+   "share_v2": 0.00739
+  },
+  "leo": {
+   "soft_rvm": 0.6769,
+   "soft_v2": 0.4728,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.01356,
+   "share_v2": 0.00723
+  },
+  "microsoft": {
+   "soft_rvm": 0.655,
+   "soft_v2": 0.5815,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.01997,
+   "share_v2": 0.01874
+  },
+  "shakira": {
+   "soft_rvm": 0.7301,
+   "soft_v2": 0.6325,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.04612,
+   "share_v2": 0.03429
+  },
+  "tryguys": {
+   "soft_rvm": 0.7764,
+   "soft_v2": 0.5962,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.03493,
+   "share_v2": 0.02477
+  }
+ }
+}

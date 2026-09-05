@@ -1,0 +1,53 @@
+skipping
+es2: no window clip in /content/win, skipping
+bilibili: no window clip in /content/win, skipping
+
+========================================================================================================
+v2 vs v1, every clip on its single-shot window (comparable: area_cv, dropouts, mean_area)
+========================================================================================================
+clip subj area_cv v1 v2 mean_area v1 v2 drop v1 v2 lost
+--------------------------------------------------------------------------------------------------------
+1917 1 0.1938 0.2039 0.3147 0.2802 0 0 never
+ipman 2 0.1240 0.1179 0.2874 0.2780 0 0 never
+butter 4 0.5765 0.7448 0.2011 0.0901 0 0 never
+dance 4 0.0989 0.1017 0.1306 0.1185 0 0 never
+dance2 1 0.0588 0.0599 0.0611 0.0605 0 0 never
+dance3 2 0.0428 0.0430 0.0830 0.0822 0 0 never
+shakira 3 0.1500 0.1513 0.1536 0.1517 0 0 never
+tryguys 3 0.0103 0.0124 0.6267 0.6182 0 0 never
+codylexi 2 0.0116 0.0130 0.4812 0.4720 0 0 never
+asianboss2 1 0.0112 0.0124 0.2777 0.2739 0 0 never
+microsoft 2 0.0026 0.0060 0.3937 0.3793 0 0 never
+interview 2 0.0135 0.0176 0.4787 0.4653 0 0 never
+jensen 1 0.0174 0.0177 0.2495 0.2481 0 0 never
+eddie 1 0.0166 0.0257 0.3836 0.3746 0 0 never
+leo 1 0.1184 0.1234 0.1166 0.1158 0 0 never
+
+========================================================================================================
+PRODUCT PATH (pipeline.py) vs v1 -- the numbers that describe what would actually ship
+========================================================================================================
+clip subj mean_area v1 bench product v1 cov% lost shots s
+--------------------------------------------------------------------------------------------------------
+1917 1 0.3147 0.2802 0.2801 89.0% never 1 170
+ipman 2 0.2874 0.2780 0.2796 97.3% never 1 161
+butter 4 0.2011 0.0901 0.1976 98.3% never 1 194
+dance 4 0.1306 0.1185 0.1184 90.7% never 1 211
+dance2 1 0.0611 0.0605 0.0611 100.0% never 1 192
+dance3 2 0.0830 0.0822 0.0825 99.4% never 1 200
+shakira 3 0.1536 0.1517 0.1527 99.4% never 1 208
+tryguys 3 0.6267 0.6182 0.6220 99.3% never 1 196
+codylexi 2 0.4812 0.4720 0.4771 99.1% never 1 187
+asianboss2 1 0.2777 0.2739 0.2759 99.4% never 1 185
+microsoft 2 0.3937 0.3793 0.3851 97.8% never 1 166
+interview 2 0.4787 0.4653 0.4695 98.1% never 1 187
+jensen 1 0.2495 0.2481 0.2490 99.8% never 1 184
+eddie 1 0.3836 0.3746 0.3796 99.0% never 1 140
+leo 1 0.1166 0.1158 0.1164 99.8% never 1 158
+
+v1 cov% is the product path's coverage as a share of v1's. It is NOT a quality score -- v1 over-includes, so 100% is not the target and neither is more. Read it beside the halo/hole split.
+
+json -> /content/bench_out/bench_results.json
+subj = subjects the seed gate kept; lost = frame after which the matte stops holding all of them ('never' passes)
+
+NOTE: area_cv and mean_area compare COVERAGE, and v1's matte is over-inclusive on at least ipman and butter, so a v2 loss in these columns is not a quality result. Run bench/score_disagreement.py against the persisted alphas before making any v2-vs-v1 claim.
+

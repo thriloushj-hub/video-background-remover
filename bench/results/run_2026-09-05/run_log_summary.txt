@@ -1,0 +1,30 @@
+--- 1917 window [4, 76]
+1917_w4_76: 72f @24.000 1 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=0 high_motion=65 170.3s
+--- ipman window [158, 230]
+ipman_w318_389: 72f @24.000 1 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=0 high_motion=71 161.3s
+--- butter window [4, 76]
+butter_w4_76: 72f @23.976 1 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=2 high_motion=71 194.3s
+--- dance window [4, 76]
+dance_w4_76: 72f @23.976 1 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=0 high_motion=71 210.9s
+--- dance2 window [4, 76]
+dance2_w4_76: 72f @30.000 1 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=0 high_motion=40 192.4s
+--- dance3 window [4, 76]
+dance3_w4_76: 72f @30.000 1 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=0 high_motion=58 199.6s
+--- shakira window [189, 261]
+shakira_w189_261: 72f @23.976 1 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=0 high_motion=71 208.0s
+--- tryguys window [69, 141]
+tryguys_w69_141: 72f @23.976 1 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=0 high_motion=36 196.5s
+--- codylexi window [4, 76]
+codylexi_w4_76: 72f @23.976 1 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=0 high_motion=13 187.4s
+--- asianboss2 window [4, 76]
+asianboss2_w4_76: 72f @24.000 1 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=0 high_motion=5 185.0s
+--- microsoft window [249, 321]
+microsoft_w249_321: 72f @29.970 1 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=0 high_motion=0 166.0s
+--- interview window [262, 334]
+interview_w262_334: 72f @29.970 1 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=0 high_motion=7 187.3s
+--- jensen window [4, 76]
+jensen_w4_76: 72f @29.970 1 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=0 high_motion=8 184.3s
+--- eddie window [67, 139]
+eddie_w67_139: 72f @24.000 1 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=0 high_motion=22 140.3s
+--- leo window [4, 76]
+leo_w4_76: 72f @23.976 1 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=0 high_motion=48 158.0s

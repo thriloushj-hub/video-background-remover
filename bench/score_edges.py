@@ -15,16 +15,28 @@ Caveat, stated rather than buried: both sides are read at the persisted <=960px
 width, so absolute values are not the full-resolution ones. Both sides are at
 the SAME width, so the comparison is fair; the absolutes are not quotable
 against a full-res run.
+
+Which v2 arm this is pointed at matters, and it is the whole reason 5.1t
+existed. Until 2 Sep the only v2 alphas ever written to disk were the fix-OFF
+ones, and 3.6 measures the motion fix at edge_soft +0.1098 -- the same size as
+the gap this script was reporting against RVM. So the directories are arguments
+now rather than constants, and the arm is printed and stored beside the result,
+because "v2's boundary is the harder one" is a different claim depending on
+which arm produced it.
+
+    python bench/score_edges.py --rvm rvm_alpha --v2 bench_out --arm alpha_on
+
+The JSON it writes is now {"arm": ..., "rows": {...}} rather than the bare row
+map the 2 Sep file holds; the older file is left as it is rather than rewritten,
+since it is the record of what was actually run that day.
 """
+import argparse
 import glob
 import json
 import os
 
 import cv2
 import numpy as np
-
-RVM = "/home/claude/rvm_alpha"
-V2 = "/home/claude/v2_alpha"
 
 
 def load(d):
@@ -68,31 +80,55 @@ def soft_share(a):
     return float(((a > 0.05) & (a < 0.95)).mean())
 
 
-rows = {}
-for clip in sorted(os.listdir(RVM)):
-    if not os.path.isdir(f"{V2}/{clip}"):
-        continue
-    ar, a2 = load(f"{RVM}/{clip}"), load(f"{V2}/{clip}")
-    n = min(len(ar), len(a2))
-    if not n:
-        continue
-    h, w = a2[0].shape
-    ar = [cv2.resize(x, (w, h), interpolation=cv2.INTER_AREA) for x in ar[:n]]
-    a2 = a2[:n]
-    step = 2
-    rows[clip] = dict(
-        soft_rvm=round(float(np.mean([edge_soft(x) for x in ar[::step]])), 4),
-        soft_v2=round(float(np.mean([edge_soft(x) for x in a2[::step]])), 4),
-        sharp_rvm=round(float(np.mean([sharpness(x) for x in ar[::step]])), 4),
-        sharp_v2=round(float(np.mean([sharpness(x) for x in a2[::step]])), 4),
-        share_rvm=round(float(np.mean([soft_share(x) for x in ar[::step]])), 5),
-        share_v2=round(float(np.mean([soft_share(x) for x in a2[::step]])), 5),
-    )
-    print(clip, json.dumps(rows[clip]), flush=True)
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--rvm", default="/home/claude/rvm_alpha",
+                    help="dir of per-clip RVM alpha PNG folders")
+    ap.add_argument("--v2", default="/home/claude/v2_alpha",
+                    help="dir of per-clip v2 alpha folders")
+    ap.add_argument("--arm", default="",
+                    help="subdirectory inside each v2 clip dir holding the "
+                         "arm's PNGs, e.g. 'alpha' (fix-off) or 'alpha_on' "
+                         "(fix-on). Empty means the clip dir itself.")
+    ap.add_argument("--out", default="/home/claude/score/edge_scores.json")
+    a = ap.parse_args()
 
-json.dump(rows, open("/home/claude/score/edge_scores.json", "w"), indent=1)
-n = len(rows)
-print("\nv2 softer band on", sum(r["soft_v2"] > r["soft_rvm"] for r in rows.values()), "of", n)
-print("v2 sharper on   ", sum(r["sharp_v2"] > r["sharp_rvm"] for r in rows.values()), "of", n)
-print("v2 more real alpha on", sum(r["share_v2"] > r["share_rvm"] for r in rows.values()), "of", n)
-print("EDGE DONE")
+    def v2_dir(clip):
+        return os.path.join(a.v2, clip, a.arm) if a.arm else os.path.join(a.v2, clip)
+
+    rows = {}
+    for clip in sorted(os.listdir(a.rvm)):
+        if not os.path.isdir(v2_dir(clip)):
+            continue
+        ar, a2 = load(os.path.join(a.rvm, clip)), load(v2_dir(clip))
+        n = min(len(ar), len(a2))
+        if not n:
+            continue
+        h, w = a2[0].shape
+        ar = [cv2.resize(x, (w, h), interpolation=cv2.INTER_AREA) for x in ar[:n]]
+        a2 = a2[:n]
+        step = 2
+        rows[clip] = dict(
+            soft_rvm=round(float(np.mean([edge_soft(x) for x in ar[::step]])), 4),
+            soft_v2=round(float(np.mean([edge_soft(x) for x in a2[::step]])), 4),
+            sharp_rvm=round(float(np.mean([sharpness(x) for x in ar[::step]])), 4),
+            sharp_v2=round(float(np.mean([sharpness(x) for x in a2[::step]])), 4),
+            share_rvm=round(float(np.mean([soft_share(x) for x in ar[::step]])), 5),
+            share_v2=round(float(np.mean([soft_share(x) for x in a2[::step]])), 5),
+        )
+        print(clip, json.dumps(rows[clip]), flush=True)
+
+    os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
+    json.dump({"arm": a.arm or "(clip dir)", "rows": rows},
+              open(a.out, "w"), indent=1)
+    n = len(rows)
+    arm = a.arm or "(clip dir)"
+    print(f"\nv2 arm: {arm}   clips: {n}")
+    print("v2 softer band on", sum(r["soft_v2"] > r["soft_rvm"] for r in rows.values()), "of", n)
+    print("v2 sharper on   ", sum(r["sharp_v2"] > r["sharp_rvm"] for r in rows.values()), "of", n)
+    print("v2 more real alpha on", sum(r["share_v2"] > r["share_rvm"] for r in rows.values()), "of", n)
+    print("EDGE DONE")
+
+
+if __name__ == "__main__":
+    main()
