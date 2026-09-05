@@ -1,0 +1,128 @@
+{
+ "1917": {
+  "halo_frac": 0.1138,
+  "halo_shell": 0.0344,
+  "halo_solo": 0.0794,
+  "solo_components": 56,
+  "solo_max_frame_frac": 0.0396
+ },
+ "asianboss2": {
+  "halo_frac": 0.0113,
+  "halo_shell": 0.0113,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "bilibili": {
+  "halo_frac": 0.0077,
+  "halo_shell": 0.0076,
+  "halo_solo": 0.0001,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "butter": {
+  "halo_frac": 0.5406,
+  "halo_shell": 0.0374,
+  "halo_solo": 0.5032,
+  "solo_components": 147,
+  "solo_max_frame_frac": 0.1635
+ },
+ "codylexi": {
+  "halo_frac": 0.0124,
+  "halo_shell": 0.0124,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "dance": {
+  "halo_frac": 0.0958,
+  "halo_shell": 0.0605,
+  "halo_solo": 0.0354,
+  "solo_components": 30,
+  "solo_max_frame_frac": 0.0124
+ },
+ "dance2": {
+  "halo_frac": 0.0208,
+  "halo_shell": 0.0208,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "dance3": {
+  "halo_frac": 0.0215,
+  "halo_shell": 0.0215,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "dlh": {
+  "halo_frac": 0.018,
+  "halo_shell": 0.0179,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "eddie": {
+  "halo_frac": 0.0123,
+  "halo_shell": 0.0123,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "es2": {
+  "halo_frac": 0.0158,
+  "halo_shell": 0.0157,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "interview": {
+  "halo_frac": 0.0123,
+  "halo_shell": 0.0123,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "ipman": {
+  "halo_frac": 0.0229,
+  "halo_shell": 0.0229,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "jensen": {
+  "halo_frac": 0.0083,
+  "halo_shell": 0.0083,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "leo": {
+  "halo_frac": 0.014,
+  "halo_shell": 0.014,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "microsoft": {
+  "halo_frac": 0.0084,
+  "halo_shell": 0.0084,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "shakira": {
+  "halo_frac": 0.0169,
+  "halo_shell": 0.0169,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ },
+ "tryguys": {
+  "halo_frac": 0.0067,
+  "halo_shell": 0.0067,
+  "halo_solo": 0.0,
+  "solo_components": 0,
+  "solo_max_frame_frac": 0.0
+ }
+}

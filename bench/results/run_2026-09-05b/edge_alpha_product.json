@@ -1,0 +1,149 @@
+{
+ "arm": "alpha_product",
+ "rows": {
+  "1917": {
+   "soft_rvm": 0.83,
+   "soft_v2": 0.7237,
+   "sharp_rvm": 0.9721,
+   "sharp_v2": 0.9974,
+   "share_rvm": 0.04533,
+   "share_v2": 0.02683
+  },
+  "asianboss2": {
+   "soft_rvm": 0.6784,
+   "soft_v2": 0.5761,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.01639,
+   "share_v2": 0.01128
+  },
+  "bilibili": {
+   "soft_rvm": 0.4785,
+   "soft_v2": 0.555,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.01004,
+   "share_v2": 0.01135
+  },
+  "butter": {
+   "soft_rvm": 0.6202,
+   "soft_v2": 0.602,
+   "sharp_rvm": 0.9998,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.07489,
+   "share_v2": 0.04773
+  },
+  "codylexi": {
+   "soft_rvm": 0.7679,
+   "soft_v2": 0.6277,
+   "sharp_rvm": 0.9987,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.02642,
+   "share_v2": 0.02091
+  },
+  "dance": {
+   "soft_rvm": 0.5857,
+   "soft_v2": 0.7429,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.04058,
+   "share_v2": 0.04138
+  },
+  "dance2": {
+   "soft_rvm": 0.656,
+   "soft_v2": 0.6919,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.01329,
+   "share_v2": 0.01327
+  },
+  "dance3": {
+   "soft_rvm": 0.5569,
+   "soft_v2": 0.6663,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.02222,
+   "share_v2": 0.02702
+  },
+  "dlh": {
+   "soft_rvm": 0.5173,
+   "soft_v2": 0.53,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.0128,
+   "share_v2": 0.01241
+  },
+  "eddie": {
+   "soft_rvm": 0.9006,
+   "soft_v2": 0.71,
+   "sharp_rvm": 0.9954,
+   "sharp_v2": 0.9994,
+   "share_rvm": 0.02543,
+   "share_v2": 0.01761
+  },
+  "es2": {
+   "soft_rvm": 0.8134,
+   "soft_v2": 0.8288,
+   "sharp_rvm": 0.9562,
+   "sharp_v2": 0.9998,
+   "share_rvm": 0.02823,
+   "share_v2": 0.01998
+  },
+  "interview": {
+   "soft_rvm": 0.7372,
+   "soft_v2": 0.5913,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.03407,
+   "share_v2": 0.0288
+  },
+  "ipman": {
+   "soft_rvm": 0.7543,
+   "soft_v2": 0.72,
+   "sharp_rvm": 0.9799,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.05334,
+   "share_v2": 0.04108
+  },
+  "jensen": {
+   "soft_rvm": 0.6394,
+   "soft_v2": 0.5254,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.01248,
+   "share_v2": 0.00863
+  },
+  "leo": {
+   "soft_rvm": 0.6769,
+   "soft_v2": 0.6471,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.01356,
+   "share_v2": 0.01085
+  },
+  "microsoft": {
+   "soft_rvm": 0.655,
+   "soft_v2": 0.5781,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.01997,
+   "share_v2": 0.01886
+  },
+  "shakira": {
+   "soft_rvm": 0.7301,
+   "soft_v2": 0.8241,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 0.9987,
+   "share_rvm": 0.04612,
+   "share_v2": 0.05224
+  },
+  "tryguys": {
+   "soft_rvm": 0.7764,
+   "soft_v2": 0.6422,
+   "sharp_rvm": 1.0,
+   "sharp_v2": 1.0,
+   "share_rvm": 0.03493,
+   "share_v2": 0.0266
+  }
+ }
+}

@@ -1,0 +1,364 @@
+{
+ "1917": {
+  "window": [
+   4,
+   76
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": 0.791,
+  "area_cv": 0.1938,
+  "edge_soft": 0.1922,
+  "sharpness": 0.6598,
+  "dropouts": 0,
+  "mean_area": 0.3147,
+  "subjects_f0": 1,
+  "trusted": true
+ },
+ "ipman": {
+  "window": [
+   158,
+   230
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": null,
+  "area_cv": 0.124,
+  "edge_soft": null,
+  "sharpness": null,
+  "dropouts": 0,
+  "mean_area": 0.2874,
+  "subjects_f0": 2,
+  "trusted": true,
+  "note": "RESTORED 2026-08-26 on a re-cut window. The previous clip, ipman_w61_133.mp4, was source frames 61-133, which lies entirely outside v1's matte coverage (source 160-484 of 501, docs/BUGS.md #1) -- so it had no valid baseline and every ipman v1-vs-v2 comparison from 16 to 26 Aug compared different footage. See Ipman_Window_Void.md. bench_payload now carries ipman_w318_389.mp4, cut frame-accurately from the source at 318-389 (13.25-16.25s): NCC 0.9999 against source[318:390], dropping to 0.84 one frame either side. That window falls inside v1's coverage, so matte 158-229 is the same footage. mean_area, area_cv and dropouts were recomputed from the matte and reproduce v1_ipman_newwindow.json to four decimals; that row's offset of 160 was independently re-validated on 5 probes at NCC 0.944-0.969. edge_soft, sharpness and bg_share are null rather than carried over from the void row: the recipe behind the other rows' values could not be reproduced exactly, and edge_soft/sharpness must never appear in a v2-beats-v1 claim anyway (v1's recovery ramp pins sharpness to 0.654-0.673 across all clips regardless of content)."
+ },
+ "butter": {
+  "window": [
+   4,
+   76
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": 0.804,
+  "area_cv": 0.5765,
+  "edge_soft": 0.1075,
+  "sharpness": 0.673,
+  "dropouts": 0,
+  "mean_area": 0.2011,
+  "subjects_f0": 4,
+  "trusted": true
+ },
+ "dance": {
+  "window": [
+   4,
+   76
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": 1.0,
+  "area_cv": 0.0989,
+  "edge_soft": 0.1042,
+  "sharpness": 0.6688,
+  "dropouts": 0,
+  "mean_area": 0.1306,
+  "subjects_f0": 3,
+  "trusted": true
+ },
+ "dance2": {
+  "window": [
+   4,
+   76
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": 1.0,
+  "area_cv": 0.0588,
+  "edge_soft": 0.1456,
+  "sharpness": 0.6589,
+  "dropouts": 0,
+  "mean_area": 0.0611,
+  "subjects_f0": 1,
+  "trusted": true
+ },
+ "dance3": {
+  "window": [
+   4,
+   76
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": 0.999,
+  "area_cv": 0.0428,
+  "edge_soft": 0.1252,
+  "sharpness": 0.6685,
+  "dropouts": 0,
+  "mean_area": 0.083,
+  "subjects_f0": 2,
+  "trusted": true
+ },
+ "shakira": {
+  "window": [
+   189,
+   261
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": 1.0,
+  "area_cv": 0.15,
+  "edge_soft": 0.1808,
+  "sharpness": 0.6656,
+  "dropouts": 0,
+  "mean_area": 0.1536,
+  "subjects_f0": 3,
+  "trusted": true
+ },
+ "mv": null,
+ "tryguys": {
+  "window": [
+   69,
+   141
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": 0.407,
+  "area_cv": 0.0103,
+  "edge_soft": 0.1845,
+  "sharpness": 0.6646,
+  "dropouts": 0,
+  "mean_area": 0.6267,
+  "subjects_f0": 2,
+  "trusted": true
+ },
+ "codylexi": {
+  "window": [
+   4,
+   76
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": 0.748,
+  "area_cv": 0.0116,
+  "edge_soft": 0.1841,
+  "sharpness": 0.6607,
+  "dropouts": 0,
+  "mean_area": 0.4812,
+  "subjects_f0": 1,
+  "trusted": true
+ },
+ "asianboss2": {
+  "window": [
+   4,
+   76
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": 0.855,
+  "area_cv": 0.0112,
+  "edge_soft": 0.1557,
+  "sharpness": 0.6676,
+  "dropouts": 0,
+  "mean_area": 0.2777,
+  "subjects_f0": 1,
+  "trusted": true
+ },
+ "microsoft": {
+  "window": [
+   249,
+   321
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": 0.604,
+  "area_cv": 0.0026,
+  "edge_soft": 0.1628,
+  "sharpness": 0.6544,
+  "dropouts": 0,
+  "mean_area": 0.3937,
+  "subjects_f0": 2,
+  "trusted": true
+ },
+ "interview": {
+  "window": [
+   262,
+   334
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": 0.662,
+  "area_cv": 0.0135,
+  "edge_soft": 0.2078,
+  "sharpness": 0.6565,
+  "dropouts": 0,
+  "mean_area": 0.4787,
+  "subjects_f0": 2,
+  "trusted": true
+ },
+ "jensen": {
+  "window": [
+   4,
+   76
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": 0.903,
+  "area_cv": 0.0174,
+  "edge_soft": 0.14,
+  "sharpness": 0.6551,
+  "dropouts": 0,
+  "mean_area": 0.2495,
+  "subjects_f0": 1,
+  "trusted": true
+ },
+ "eddie": {
+  "window": [
+   67,
+   139
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": 0.622,
+  "area_cv": 0.0166,
+  "edge_soft": 0.1967,
+  "sharpness": 0.6565,
+  "dropouts": 0,
+  "mean_area": 0.3836,
+  "subjects_f0": 1,
+  "trusted": true
+ },
+ "leo": {
+  "window": [
+   4,
+   76
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": 0.971,
+  "area_cv": 0.1184,
+  "edge_soft": 0.1217,
+  "sharpness": 0.6619,
+  "dropouts": 0,
+  "mean_area": 0.1166,
+  "subjects_f0": 1,
+  "trusted": true
+ },
+ "dlh": {
+  "window": [
+   580,
+   652
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": null,
+  "area_cv": 0.0416,
+  "edge_soft": null,
+  "sharpness": null,
+  "dropouts": 0,
+  "mean_area": 0.1109,
+  "subjects_f0": null,
+  "trusted": true
+ },
+ "es2": {
+  "window": [
+   88,
+   160
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": null,
+  "area_cv": 0.048,
+  "edge_soft": null,
+  "sharpness": null,
+  "dropouts": 0,
+  "mean_area": 0.2185,
+  "subjects_f0": null,
+  "trusted": true
+ },
+ "bilibili": {
+  "window": [
+   499,
+   571
+  ],
+  "frames": 72,
+  "green_bgr": [
+   151,
+   253,
+   119
+  ],
+  "bg_share": null,
+  "area_cv": 0.1381,
+  "edge_soft": null,
+  "sharpness": null,
+  "dropouts": 0,
+  "mean_area": 0.1806,
+  "subjects_f0": null,
+  "trusted": true
+ }
+}
