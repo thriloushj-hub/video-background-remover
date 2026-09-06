@@ -121,6 +121,24 @@ class SeedConfig:
     # note rather than filled with its rectangle.
     maskrcnn_score_min: float = 0.80
     maskrcnn_match_iou: float = 0.30
+    # Recovery-only relaxation (5.5).
+    #
+    # A heavily motion-blurred runner clears the pipeline's own person detector
+    # -- the re-entry scan finds his box and reports cov=0.000 -- but does not
+    # clear Mask R-CNN's mask head at 0.80. `masks_from_boxes` then returns
+    # nothing for that box, `build_seed` drops the subject, and the local
+    # re-entry pass re-mattes the cast it already had. On the full-length 1917
+    # that is 97 of 724 frames where v1 holds a region v2 does not, peaking at
+    # 12.3% of frame, with ten local passes firing and changing nothing.
+    #
+    # So: for a box the two-stage scan has ALREADY confirmed as an uncovered
+    # person, and only after the strict pass has failed on that one box, retry
+    # the match at this threshold. Everything else is unchanged -- the frame-0
+    # cast (3.3g) still decides who is a subject, `match_iou` still decides
+    # whether an instance belongs to the box, and a box that matches nothing is
+    # still skipped rather than filled with its rectangle.
+    maskrcnn_recover: bool = True
+    maskrcnn_recover_score_min: float = 0.35
     mask_threshold: float = 0.0
     detect_threshold: float = 0.35
     concept_text: str = "person"

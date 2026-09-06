@@ -7,7 +7,7 @@ They are already split under Colab's 10 MB per-file upload limit.
 **Rebuild `vbgr_code.zip` with `python bench/build_code_zip.py`** — never by
 hand. It enumerates `vbgr/`, `bench/`, `tests/` and the root scripts, verifies
 content *and* membership, and prints what it added or dropped. As of 31 Aug it
-is **64 entries** (5 Sep).
+is **67 entries** (5 Sep).
 
 The hand-built version it replaced refreshed the contents of a frozen 34-entry
 list and verified those entries by hash — a check that cannot notice a file
@@ -65,7 +65,7 @@ human action per fresh VM. See `vbgr_colab_access.md`.
 
        !cd /content && pip -q install pytest && python -m pytest tests/ -q
 
-   Expect **158 passed** as of 5 Sep (unchanged since 2 Sep; the 5 Sep change was to bench/score_edges.py, which has no test of its own). A lower number usually means an old
+   Expect **170 passed** as of 5 Sep (158 until the 5.5 recovery seed added twelve). A lower number usually means an old
    `vbgr_code.zip` unpacked — check the count before trusting the run, not
    after.
 

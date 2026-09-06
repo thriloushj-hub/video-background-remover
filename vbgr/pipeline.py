@@ -34,7 +34,8 @@ import numpy as np
 
 from . import compose, decontaminate, motion, refine, shots, video_io
 from .config import Config
-from .detect import Detection, PersonDetector, held_props, select_person_boxes
+from .detect import (Detection, PersonDetector, held_props,
+                     iou as _iou, select_person_boxes)
 from .engines.base import MattingEngine, build_engine
 from .gate import QualityGate
 from .reid import (IdentityBank, FeatureExtractor, uncovered_boxes,
@@ -107,6 +108,31 @@ class ClipReport:
 
 
 # --------------------------------------------------------------------------- #
+
+def _with_must_boxes(kept, people, must_boxes, iou_min: float = 0.5):
+    """`kept` plus any must-box the fresh detection dropped.
+
+    The re-entry scan and the local pass run the same gate on the same frame,
+    so in principle they agree.  In practice the scan is what decided this
+    subject is missing, and re-deciding it here can only lose him -- so a
+    must-box that no kept box already covers is put back, preferring the
+    detector's own Detection for it (which carries the confidence) and falling
+    back to a synthetic one.
+    """
+    out = list(kept)
+    for b in must_boxes:
+        bb = tuple(map(float, b))
+        if any(_iou(bb, tuple(map(float, d.box))) >= iou_min for d in out):
+            continue
+        src = None
+        for d in people:
+            if _iou(bb, tuple(map(float, d.box))) >= iou_min:
+                src = d
+                break
+        out.append(src if src is not None
+                   else Detection(box=b, conf=1.0, cls=0, label="person"))
+    return out
+
 
 class Pipeline:
     def __init__(self, cfg: Config, require_commercial: bool = False):
@@ -476,7 +502,9 @@ class Pipeline:
         for i in sorted(pending):
             if uncovered_boxes(alphas[i], [boxes_at[i][j].box for j in pending[i]],
                                cfg.reid.max_overlap, cfg.reid.min_area_frac):
-                loc = self._local_pass(frames, i, cfg.reid.stitch_radius)
+                loc = self._local_pass(
+                    frames, i, cfg.reid.stitch_radius,
+                    must_boxes=[boxes_at[i][j].box for j in pending[i]])
                 if loc is not None:
                     lo, hi, arr = loc
                     alphas[lo:hi] = np.maximum(alphas[lo:hi], arr)
@@ -536,8 +564,26 @@ class Pipeline:
             out[anchor:] = a
         return out
 
-    def _local_pass(self, frames, anchor: int, radius: int):
-        """Forward + backward from `anchor`, limited to a window around it."""
+    def _local_pass(self, frames, anchor: int, radius: int, must_boxes=()):
+        """Forward + backward from `anchor`, limited to a window around it.
+
+        ``must_boxes`` are the boxes the scan confirmed uncovered at this
+        anchor.  They matter twice, and 5.5 is what happens without either.
+
+        First, this pass re-runs the detector and re-applies
+        ``select_person_boxes``, so a subject the scan found can be filtered
+        out again here before he is ever seeded.  Any must-box the fresh
+        detection does not already cover is added back.
+
+        Second -- and this is the one that cost 97 frames of full-length
+        1917 -- ``build_seed`` asks Mask R-CNN for a mask inside each box, and
+        a heavily motion-blurred runner does not clear its 0.80 score head
+        even though he cleared the person detector.  No mask, no seed, and the
+        pass re-mattes exactly the cast it already had: ten local passes fired
+        on that clip and none of them changed the matte.  Passing the boxes on
+        as ``recover_boxes`` lets the seeder retry those specific boxes once at
+        a lower score.
+        """
         cfg = self.cfg
         H, W = frames[0].shape[:2]
         people, props = self.detector.detect(frames[anchor])
@@ -546,10 +592,12 @@ class Pipeline:
                                       cfg.detect.box_score_ratio,
                                       cfg.detect.person_rel_area_min,
                                       cfg.detect.conf_abs_min)
+        kept = _with_must_boxes(kept, people, must_boxes)
         if not kept:
             return None
         seed = build_seed(frames[anchor], self.seeder, kept,
-                          held_props(props, kept), cfg.seed)
+                          held_props(props, kept), cfg.seed,
+                          recover_boxes=list(must_boxes))
         m = refine.erode_dilate(seed.mask, cfg.matting.r_erode,
                                 cfg.matting.r_dilate)
 

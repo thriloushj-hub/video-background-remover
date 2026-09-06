@@ -340,14 +340,23 @@ class MaskRCNNSeeder:
     failures.
     """
 
+    supports_recover = True
+
     def __init__(self, detector=None, score_min: float = 0.80,
-                 match_iou: float = 0.30, device: str = "auto"):
+                 match_iou: float = 0.30, device: str = "auto",
+                 recover: bool = True, recover_score_min: float = 0.35):
         self._det = detector
         self.score_min = score_min
         self.match_iou = match_iou
+        self.recover = recover
+        self.recover_score_min = recover_score_min
         self._device = device
         self.backend = "maskrcnn"
         self.notes: List[str] = []
+        # Aligned 1:1 with the last ``boxes`` argument, None where nothing
+        # matched.  ``masks_from_boxes`` returns the compact list it always
+        # has, so anything that needs to know WHICH box was skipped reads this.
+        self.last_aligned: List[Optional[np.ndarray]] = []
 
     def _ensure(self):
         if self._det is not None:
@@ -363,15 +372,19 @@ class MaskRCNNSeeder:
         self._torch = torch
         self._det = m
 
-    def _instances(self, frame_bgr: np.ndarray):
+    def _instances(self, frame_bgr: np.ndarray, score_min=None):
         """(masks, boxes) for people above ``score_min``, at frame resolution.
 
         A detector exposing ``instances(frame_bgr) -> (masks, boxes)`` is used
         directly.  That hook exists so the matching logic below -- which is
         where the real risk is -- can be tested without torch installed.
         """
+        thr = self.score_min if score_min is None else score_min
         if callable(getattr(self._det, "instances", None)):
-            return self._det.instances(frame_bgr)
+            try:
+                return self._det.instances(frame_bgr, thr)
+            except TypeError:
+                return self._det.instances(frame_bgr)
         self._ensure()
         import torch
         rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
@@ -380,18 +393,15 @@ class MaskRCNNSeeder:
             t = t.cuda()
         with torch.no_grad():
             o = self._det([t])[0]
-        sel = (o["labels"] == 1) & (o["scores"] > self.score_min)
+        sel = (o["labels"] == 1) & (o["scores"] > thr)
         masks = o["masks"][sel, 0].detach().cpu().numpy() > 0.5
         boxes = o["boxes"][sel].detach().cpu().numpy()
         return masks, boxes
 
-    def masks_from_boxes(self, frame_bgr: np.ndarray,
-                         boxes: Sequence[Box]) -> List[np.ndarray]:
-        if not boxes:
-            return []
-        self.notes = []
-        inst_masks, inst_boxes = self._instances(frame_bgr)
-        out = []
+    def _match(self, frame_bgr, boxes, score_min):
+        """Aligned list of masks for ``boxes``, None where nothing matched."""
+        inst_masks, inst_boxes = self._instances(frame_bgr, score_min)
+        out: List[Optional[np.ndarray]] = []
         used = set()
         for b in boxes:
             best, best_iou = None, 0.0
@@ -402,13 +412,53 @@ class MaskRCNNSeeder:
                 if v > best_iou:
                     best, best_iou = i, v
             if best is None or best_iou < self.match_iou:
-                self.notes.append(
-                    f"no mask instance matched box {tuple(int(x) for x in b)} "
-                    f"(best IoU {best_iou:.2f} < {self.match_iou}); subject skipped")
+                out.append(None)
                 continue
             used.add(best)
             out.append(inst_masks[best].astype(np.uint8))
         return out
+
+    def masks_from_boxes(self, frame_bgr: np.ndarray,
+                         boxes: Sequence[Box],
+                         recover_boxes: Sequence[Box] = ()) -> List[np.ndarray]:
+        """Masks for ``boxes``, compact -- a box nothing matched is skipped.
+
+        ``recover_boxes`` is the 5.5 escape hatch and it is deliberately
+        narrow.  A box listed there has already been confirmed by the re-entry
+        scan as a person the matte is not holding, so when the strict pass
+        finds nothing for it the match is retried **once**, for that box only,
+        at ``recover_score_min``.  Everything else is untouched: ``match_iou``
+        still decides whether an instance belongs to the box, a box that still
+        matches nothing is still skipped rather than filled with its rectangle,
+        and no box outside this list is ever matched at the lower threshold.
+        """
+        if not boxes:
+            self.last_aligned = []
+            return []
+        self.notes = []
+        aligned = self._match(frame_bgr, boxes, None)
+        want = {tuple(map(float, b)) for b in recover_boxes}
+        missing = [k for k, m in enumerate(aligned)
+                   if m is None and tuple(map(float, boxes[k])) in want]
+        if missing and self.recover and self.recover_score_min < self.score_min:
+            second = self._match(frame_bgr, [boxes[k] for k in missing],
+                                 self.recover_score_min)
+            for k, m in zip(missing, second):
+                if m is None:
+                    continue
+                aligned[k] = m
+                self.notes.append(
+                    f"recovered box {tuple(int(x) for x in boxes[k])} at "
+                    f"score>={self.recover_score_min} after the strict pass "
+                    f"({self.score_min}) matched nothing -- 5.5, confirmed "
+                    f"uncovered by the re-entry scan")
+        for k, m in enumerate(aligned):
+            if m is None:
+                self.notes.append(
+                    f"no mask instance matched box "
+                    f"{tuple(int(x) for x in boxes[k])}; subject skipped")
+        self.last_aligned = aligned
+        return [m for m in aligned if m is not None]
 
     def masks_from_text(self, frame_bgr: np.ndarray, text: str = "person"):
         raise NotImplementedError(
@@ -426,8 +476,11 @@ def build_seeder(cfg=None):
     cfg = cfg or SeedConfig()
     backend = getattr(cfg, "backend", "maskrcnn")
     if backend == "maskrcnn":
-        return MaskRCNNSeeder(score_min=getattr(cfg, "maskrcnn_score_min", 0.80),
-                              match_iou=getattr(cfg, "maskrcnn_match_iou", 0.30))
+        return MaskRCNNSeeder(
+            score_min=getattr(cfg, "maskrcnn_score_min", 0.80),
+            match_iou=getattr(cfg, "maskrcnn_match_iou", 0.30),
+            recover=getattr(cfg, "maskrcnn_recover", True),
+            recover_score_min=getattr(cfg, "maskrcnn_recover_score_min", 0.35))
     if backend == "sam3":
         return SAM3Seeder(mask_threshold=cfg.mask_threshold,
                           detect_threshold=cfg.detect_threshold,
@@ -443,15 +496,32 @@ def build_seed(frame_bgr: np.ndarray,
                seeder: SAM3Seeder,
                kept: Sequence[Detection],
                props: Sequence[Detection] = (),
-               cfg=None) -> SeedResult:
-    """Fuse concept + text + interactive masks into one first-frame seed."""
+               cfg=None,
+               recover_boxes: Sequence[Box] = ()) -> SeedResult:
+    """Fuse concept + text + interactive masks into one first-frame seed.
+
+    ``recover_boxes`` (5.5) names boxes the re-entry scan has already confirmed
+    as a person the matte is not holding.  For those, and only those, a seeder
+    that supports it retries the mask match at a lower score once the strict
+    pass has come back empty.
+
+    Without it, a heavily motion-blurred subject is detected, flagged, handed
+    to a local re-matte pass -- and then dropped right here, because
+    ``masks_from_boxes`` returned nothing for his box.  The pass then re-mattes
+    the cast it already had, which is why ten local passes on the full-length
+    1917 changed the matte by nothing at all.
+    """
     from .config import SeedConfig
     cfg = cfg or SeedConfig()
     H, W = frame_bgr.shape[:2]
     notes: List[str] = []
 
     boxes = [d.box for d in kept]
-    concept = seeder.masks_from_boxes(frame_bgr, boxes)
+    kw = ({"recover_boxes": recover_boxes}
+          if recover_boxes and getattr(seeder, "supports_recover", False)
+          else {})
+    concept = seeder.masks_from_boxes(frame_bgr, boxes, **kw)
+    notes += [n for n in getattr(seeder, "notes", ()) if "recovered box" in n]
     base = _union(concept, (H, W))
 
     # Text-prompted exhaustive detection, matched back to the kept boxes.
@@ -465,7 +535,7 @@ def build_seed(frame_bgr: np.ndarray,
 
     # Interactive head: always fires, then its additions are appearance-gated.
     if cfg.force_interactive:
-        inter = _union(seeder.masks_from_boxes(frame_bgr, boxes), (H, W))
+        inter = _union(seeder.masks_from_boxes(frame_bgr, boxes, **kw), (H, W))
         if cfg.gate_background_regions:
             keep_extra, n_drop = drop_background_regions(
                 frame_bgr, base, inter, cfg.gate_bg_margin)
