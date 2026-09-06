@@ -1,0 +1,53 @@
+{
+ "clip": "bilibili.mp4",
+ "frames": 1372,
+ "offset": 0,
+ "frames_with_v1_only": 6,
+ "frames_with_v2_only": 0,
+ "mean_v1_only_frac": 0.000123,
+ "mean_v2_only_frac": 0.0,
+ "per_frame": [
+  {
+   "frame": 1159,
+   "v1_only": 0.02592,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  },
+  {
+   "frame": 1169,
+   "v1_only": 0.02996,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  },
+  {
+   "frame": 1170,
+   "v1_only": 0.03015,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  },
+  {
+   "frame": 1171,
+   "v1_only": 0.02925,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  },
+  {
+   "frame": 1172,
+   "v1_only": 0.02743,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  },
+  {
+   "frame": 1173,
+   "v1_only": 0.02612,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  }
+ ]
+}
