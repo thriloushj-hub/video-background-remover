@@ -84,3 +84,12 @@ _to_send/
 # two of this project's corrections came off those files with no GPU -- but the
 # raw frames are the client's material and do not belong in version control.
 bench/results/**/frames/
+
+# --- Local admin (added 2026-09-07) ---
+# Invoice and the copy of the 2 Sep client message. Not deliverables, not code.
+_admin/
+
+# --- Claude scratch outputs (added 2026-09-07) ---
+# Evidence stills delivered into chat; the ones that matter are copied into
+# _to_send/outputs/who_holds_what/ and into the vault.
+Claude outputs/
