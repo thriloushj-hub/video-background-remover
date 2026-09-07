@@ -74,10 +74,37 @@ could not see**, both on the failure modes named in the original brief:
 - **1917** drops motion-blurred runners crossing close to camera. Half fixed and
   measured (worst frame 12.3% → 5.0%); the rest is diagnosed, not papered over.
   See `bench/results/run_2026-09-06_fix55/`.
-- **bilibili** drops a subject's boots for 17 frames after a cut. Traced to the
-  mask stage rather than the detector — the person box is right and the mask is
-  up to 298 px short — which is why the fix that worked on 1917 provably cannot
-  work here. Not fixed. See `bench/results/run_2026-09-07_rest11/`.
+- **bilibili** drops a subject's boots for 16 frames after the cut at f1159.
+  **The earlier diagnosis here was wrong and is withdrawn** — see below. Not
+  fixed. See `bench/results/run_2026-09-07_rest11/`.
+
+> [!warning] The bilibili diagnosis is withdrawn (7 September 2026)
+> This section previously said the loss was "traced to the mask stage rather
+> than the detector — the person box is right and the mask is up to 298 px
+> short". **Neither half of that reproduces.**
+>
+> That claim came from an ad-hoc Colab cell that was never committed, so it
+> could not be re-derived. Re-running the **shipped** `build_seed` on the same
+> frame on CPU gives the same detection (box `822,1..1303,894`, conf `0.932`,
+> matching the original log exactly) but a fused seed reaching **row 825, 68 px
+> short of the box — not 298**.
+>
+> And the seed is not what loses the boots. The shipped alpha at f1159 reaches
+> **row 588**, which is **237 rows above the seed it was built from**. Walking
+> the CPU stages the pipeline applies to a first frame — `erode_dilate` then
+> `guided_filter` — takes the seed from 825 to **831**, so neither of them cuts
+> it either. The loss happens **inside the matting engine**, on the first frame
+> of the shot, between a mask reaching 831 and an alpha reaching 588.
+>
+> That puts bilibili in the same family as the frame-boundary falloff above
+> rather than in a family of its own: **the engine under-covers relative to its
+> own seed, worst at a subject's lower extremity and in low-contrast regions**
+> (black boots on a dark floor; a dark polo at the bottom of frame; a
+> motion-blurred hand). Confirming it and fixing it needs a GPU.
+>
+> A process note, because it is the reason this shipped: the README audit gate
+> re-derives every figure from **committed** data, and 298 px came from a script
+> that was never committed, so the gate had nothing to check it against.
 
 A third difference, on `dance`, is an accepted design decision rather than a
 bug: one further-back dancer falls below the subject-size gate, at a cost now

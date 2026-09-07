@@ -489,6 +489,54 @@ def build_seeder(cfg=None):
 
 
 # --------------------------------------------------------------------------- #
+# Seed quality: is the mask we are about to propagate actually the whole person?
+# --------------------------------------------------------------------------- #
+
+def seed_tail_fraction(mask: np.ndarray, box: Box) -> float:
+    """Fraction of a detection box's HEIGHT the instance mask fails to reach.
+
+    5.7.  A shot is seeded from one frame and every later frame inherits that
+    seed until the next cut, so a mask that stops short of its own box is not a
+    small error -- it is the whole shot.  On ``bilibili`` the shot at f1159 is
+    seeded from a mask reaching row 596 inside a box reaching row 894, and the
+    subject's boots are missing for the next sixteen frames, returning at f1175
+    which is exactly the next shot start.
+
+    Height and one end at a time, deliberately, for the reason 3.3a cost us:
+    mask AREA over box area is a function of pose (dance3's median component
+    fills 0.345 of its own box while being perfectly held), so an area gate
+    fires on crouching and sitting people.  A mask that covers the top of its
+    box and stops is a different shape of thing from a mask that is simply
+    narrow, and this measures only that.
+
+    Returns the larger of the bottom and top tails, 0.0 for a mask that spans
+    its box and 1.0 for an empty mask.
+    """
+    if mask is None:
+        return 1.0
+    ys = np.nonzero(np.any(np.asarray(mask) > 0, axis=1))[0]
+    if ys.size == 0:
+        return 1.0
+    x0, y0, x1, y1 = (float(v) for v in box)
+    bh = max(y1 - y0, 1.0)
+    bottom = max(0.0, (y1 - (float(ys.max()) + 1.0))) / bh
+    top = max(0.0, (float(ys.min()) - y0)) / bh
+    return float(max(bottom, top))
+
+
+def worst_seed_tail(seeder, frame_bgr: np.ndarray, boxes: Sequence[Box]) -> float:
+    """The worst `seed_tail_fraction` over the boxes kept for this frame.
+
+    A box that matches no instance at all counts as 1.0: `masks_from_boxes`
+    skips it, so that subject would not be seeded on this frame either.
+    """
+    if not boxes:
+        return 0.0
+    aligned = seeder._match(frame_bgr, list(boxes), None)
+    return max(seed_tail_fraction(m, b) for m, b in zip(aligned, boxes))
+
+
+# --------------------------------------------------------------------------- #
 # The full seed
 # --------------------------------------------------------------------------- #
 
