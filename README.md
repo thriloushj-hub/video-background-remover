@@ -30,11 +30,46 @@ on the same windows) found something more useful than a table: **the metric
 suite cannot separate the two previous attempts either**, which is why
 "measurably better" has been so hard to demonstrate.
 
-**Running at full length was worth it, and the reason is unflattering.**
-Thirteen of the eighteen clips hold exactly the same people as v1 — zero
-disagreement across 6,297 frames. The other five turned up **two genuine v2
-defects that eighteen benchmark windows could not see**, both on the failure
-modes named in the original brief:
+> [!warning] Corrected 7 September 2026, and this is the honest headline
+> An earlier version of this section read "thirteen of the eighteen clips hold
+> exactly the same people as v1 — zero disagreement across 6,297 frames". That
+> sentence is true of the measure it came from and **materially misleading**,
+> so it is withdrawn.
+>
+> `bench/check_full_clip_solos.py` counts whole **standalone** regions one matte
+> holds and the other does not. A hand attached to an arm, a lap attached to a
+> torso, and a strip along the frame edge are none of them standalone, so all of
+> them score zero. On `microsoft` the disagreement is **75.7% attached, 24.3%
+> interior, and 6 pixels separate** out of 1.1 million — a clip that scored a
+> perfect zero.
+>
+> Looking at the mattes over a flat background instead of reading the columns
+> found v2 losing, against v1: **a whole hand and forearm on `ipman` (f300), a
+> hand and the held microphone on `interview` (f13), four subjects' laps on
+> `tryguys` (f149) and a whole fourth person at its f0, and a band along the
+> bottom of frame on every clip whose subject is cut by the frame edge.**
+> Mean v2 alpha in the bottom eight rows where v1 is solid: microsoft **0.52**,
+> interview **0.61**, tryguys **0.72**, ipman **0.84**.
+>
+> Two causes, one of them still open. The gap is **1.70x higher within 12 frames
+> of a shot cut** than mid-shot, and on butter, shakira, tryguys, eddie and
+> codylexi the worst frame in the clip sits exactly on a shot start — one bad
+> seed, inherited until the next cut. The rest is at the frame boundary and is
+> **not** the seed (Mask R-CNN's masks reach the border, median 3 px short),
+> not `erode_dilate`, not `guided_filter` or `refine_band` (all replayed on a
+> synthetic edge-touching alpha and clean), and not the encode (the WebM and the
+> MP4 agree). What is left is the matting engine's own alpha at the image
+> boundary.
+>
+> **The delivery is on hold until this is fixed and all eighteen are re-rendered.**
+> Numbers below that were computed from the standalone-region measure describe
+> that measure, not the mattes.
+
+**Running at full length was worth it, and the reason is unflattering.** On the
+standalone-region measure thirteen of the eighteen clips came back at zero
+across 6,297 frames — see the correction above for what that measure cannot
+see. Full length also turned up **two defects that eighteen benchmark windows
+could not see**, both on the failure modes named in the original brief:
 
 - **1917** drops motion-blurred runners crossing close to camera. Half fixed and
   measured (worst frame 12.3% → 5.0%); the rest is diagnosed, not papered over.
