@@ -1,0 +1,88 @@
+{
+ "clip": "dance.mp4",
+ "frames": 363,
+ "offset": 0,
+ "frames_with_v1_only": 11,
+ "frames_with_v2_only": 0,
+ "mean_v1_only_frac": 0.00038,
+ "mean_v2_only_frac": 0.0,
+ "per_frame": [
+  {
+   "frame": 323,
+   "v1_only": 0.01294,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  },
+  {
+   "frame": 324,
+   "v1_only": 0.01311,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  },
+  {
+   "frame": 329,
+   "v1_only": 0.01183,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  },
+  {
+   "frame": 330,
+   "v1_only": 0.01184,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  },
+  {
+   "frame": 334,
+   "v1_only": 0.01228,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  },
+  {
+   "frame": 335,
+   "v1_only": 0.01248,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  },
+  {
+   "frame": 336,
+   "v1_only": 0.01231,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  },
+  {
+   "frame": 337,
+   "v1_only": 0.0126,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  },
+  {
+   "frame": 338,
+   "v1_only": 0.01276,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  },
+  {
+   "frame": 339,
+   "v1_only": 0.01295,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  },
+  {
+   "frame": 343,
+   "v1_only": 0.01302,
+   "v2_only": 0,
+   "n_v1_only": 1,
+   "n_v2_only": 0
+  }
+ ]
+}

@@ -1,0 +1,31 @@
+decoded 1372 grabbed [1159, 1165, 1170, 1176]
+seeder MaskRCNNSeeder score_min 0.8
+
+=== frame 1159  1920x1080
+   DET conf=0.932 box=(821,1)-(1303,894) h=893 bottom_gap=186
+   kept 1 dropped 0
+   SEED person 0 rows 6..596 cols 826..1180 area 0.0690
+   FUSED rows 6..596 area 0.0690
+   note: text prompt unavailable: NotImplementedError
+
+=== frame 1165  1920x1080
+   DET conf=0.935 box=(841,2)-(1313,982) h=980 bottom_gap=98
+   kept 1 dropped 0
+   SEED person 0 rows 6..933 cols 844..1254 area 0.0958
+   FUSED rows 6..933 area 0.0958
+   note: text prompt unavailable: NotImplementedError
+
+=== frame 1170  1920x1080
+   DET conf=0.930 box=(856,2)-(1315,1069) h=1067 bottom_gap=11
+   kept 1 dropped 0
+   SEED person 0 rows 13..939 cols 861..1251 area 0.0963
+   FUSED rows 13..939 area 0.0963
+   note: text prompt unavailable: NotImplementedError
+
+=== frame 1176  1920x1080
+   DET conf=0.938 box=(864,2)-(1259,1065) h=1063 bottom_gap=15
+   kept 1 dropped 0
+   SEED person 0 rows 6..1058 cols 867..1234 area 0.1147
+   FUSED rows 6..1058 area 0.1147
+   note: text prompt unavailable: NotImplementedError
+SEED DIAG DONE

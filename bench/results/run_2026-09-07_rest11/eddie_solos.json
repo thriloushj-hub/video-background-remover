@@ -1,0 +1,10 @@
+{
+ "clip": "eddie.mp4",
+ "frames": 143,
+ "offset": 0,
+ "frames_with_v1_only": 0,
+ "frames_with_v2_only": 0,
+ "mean_v1_only_frac": 0.0,
+ "mean_v2_only_frac": 0.0,
+ "per_frame": []
+}
