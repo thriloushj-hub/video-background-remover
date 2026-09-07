@@ -115,6 +115,13 @@ class SeedConfig:
     were all measured on these masks. See Pipeline_Never_Ran.
     """
     backend: Literal["maskrcnn", "sam3"] = "maskrcnn"
+    # 5.7.  Close a seed mask's gap to the bottom of its OWN detection box,
+    # when that gap is at most this fraction of the box height.  0.0 is off and
+    # is the default, so the shipped path is unchanged until a measured run
+    # says otherwise.  See seed.extend_short_tails for why bottom-only and why
+    # capped: "extend the mask to its box" without those limits is the shape of
+    # findings this project has already retracted.
+    extend_tail_max: float = 0.0
     # Mask R-CNN seeding. Boxes still come from the pipeline's own detector,
     # so the gates behave exactly as tested; the seeder only answers "what is
     # the mask inside this box". A box no instance matches is skipped with a

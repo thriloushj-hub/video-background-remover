@@ -536,6 +536,60 @@ def worst_seed_tail(seeder, frame_bgr: np.ndarray, boxes: Sequence[Box]) -> floa
     return max(seed_tail_fraction(m, b) for m, b in zip(aligned, boxes))
 
 
+def extend_short_tails(concept: Sequence[np.ndarray], seeder,
+                       boxes: Sequence[Box], max_frac: float):
+    """Fill the gap between a mask's bottom and its own box bottom.
+
+    5.7.  A shot is seeded once and every frame inherits it, and the matting
+    engine does not merely copy the seed -- on ``bilibili`` f1159 it is handed a
+    mask reaching row 831 and returns alpha reaching 588, so a seed that is a
+    little short at the feet comes out a lot short.  This closes the seed's own
+    gap before the engine ever sees it.
+
+    Deliberately narrow, because "extend the mask to its box" as a general rule
+    is the shape of five findings this project has already retracted:
+
+    * bottom only -- a mask short at the *top* is hair or a raised arm, where
+      the box is loose for reasons that are not occlusion;
+    * capped at ``max_frac`` of box height, so a genuinely half-occluded person
+      (behind a desk, cut by another subject) is left alone rather than having
+      the desk keyed in;
+    * horizontally limited to the columns the mask already occupies in its
+      lowest rows, so it extends the legs that are there rather than filling
+      the box's full width with floor.
+
+    Returns (masks, n_extended).  ``seeder.last_aligned`` says which box each
+    compact mask came from; without it nothing is extended.
+    """
+    aligned = list(getattr(seeder, "last_aligned", []) or [])
+    if len(aligned) != len(boxes):
+        return list(concept), 0
+    out, n = [], 0
+    it = iter(concept)
+    for b, am in zip(boxes, aligned):
+        if am is None:
+            continue
+        m = next(it, None)
+        if m is None:
+            break
+        m = np.asarray(m)
+        ys = np.nonzero(np.any(m > 0, axis=1))[0]
+        x0, y0, x1, y1 = (float(v) for v in b)
+        bh = max(y1 - y0, 1.0)
+        if ys.size:
+            bot = int(ys.max())
+            gap = (y1 - 1.0) - bot
+            if 0 < gap <= max_frac * bh:
+                lo = max(bot - max(2, int(0.02 * bh)), 0)
+                cols = np.nonzero(np.any(m[lo:bot + 1] > 0, axis=0))[0]
+                if cols.size:
+                    m = m.copy()
+                    m[bot + 1:int(y1), cols.min():cols.max() + 1] = 1
+                    n += 1
+        out.append(m)
+    return out, n
+
+
 # --------------------------------------------------------------------------- #
 # The full seed
 # --------------------------------------------------------------------------- #
@@ -570,6 +624,11 @@ def build_seed(frame_bgr: np.ndarray,
           else {})
     concept = seeder.masks_from_boxes(frame_bgr, boxes, **kw)
     notes += [n for n in getattr(seeder, "notes", ()) if "recovered box" in n]
+    if getattr(cfg, "extend_tail_max", 0.0) > 0.0:
+        concept, n_ext = extend_short_tails(
+            concept, seeder, boxes, cfg.extend_tail_max)
+        if n_ext:
+            notes.append(f"extended {n_ext} short mask tail(s) to the box")
     base = _union(concept, (H, W))
 
     # Text-prompted exhaustive detection, matched back to the kept boxes.
