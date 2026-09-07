@@ -13,29 +13,54 @@ python -m vbgr.cli run -i clips/ -o results/
 
 ---
 
-## Where this stands — 2 September 2026
+## Where this stands — 7 September 2026
 
-The pipeline runs end to end on all fifteen frozen clips in one command: zero
-failures, zero bad frames, ~180 s per 72-frame clip on an A100. It writes real
-per-pixel alpha, a transparent WebM that is actually transparent (15/15
-round-tripped at alpha correlation 1.0000), a composite over a still or moving
-background, and carries the source audio through with the matte bit-identical.
+**All eighteen delivery clips now run end to end at their full length**, not the
+72-frame windows everything was measured on until 5 Sep: **9,640 frames, 56
+shots, 6.8 GPU-hours, zero failures, zero bad frames, no subject lost on any
+clip.** It writes real per-pixel alpha, a transparent WebM that is actually
+transparent (round-tripped at alpha correlation 1.0000), a composite over a
+still or moving background, and carries source audio through with the matte
+bit-identical.
 
 **On the metrics that can be compared to v1 it does not beat v1, and does not
-lose to it.** Nothing tears, no subject is lost on any clip, and the boundary
-disagreement is a sub-pixel rim across the set. The comparison against the
-*other* previous attempt (RVM, re-run here on the same windows) found something
-more useful than a table: **the metric suite cannot separate the two previous
-attempts either**, which is why "measurably better" has been so hard to
-demonstrate.
+lose to it.** Nothing tears, and boundary disagreement is a sub-pixel rim across
+the set. The comparison against the *other* previous attempt (RVM, re-run here
+on the same windows) found something more useful than a table: **the metric
+suite cannot separate the two previous attempts either**, which is why
+"measurably better" has been so hard to demonstrate.
 
-Full write-ups are in the project notes; the numbers are in `bench/results/`.
+**Running at full length was worth it, and the reason is unflattering.**
+Thirteen of the eighteen clips hold exactly the same people as v1 — zero
+disagreement across 6,297 frames. The other five turned up **two genuine v2
+defects that eighteen benchmark windows could not see**, both on the failure
+modes named in the original brief:
+
+- **1917** drops motion-blurred runners crossing close to camera. Half fixed and
+  measured (worst frame 12.3% → 5.0%); the rest is diagnosed, not papered over.
+  See `bench/results/run_2026-09-06_fix55/`.
+- **bilibili** drops a subject's boots for 17 frames after a cut. Traced to the
+  mask stage rather than the detector — the person box is right and the mask is
+  up to 298 px short — which is why the fix that worked on 1917 provably cannot
+  work here. Not fixed. See `bench/results/run_2026-09-07_rest11/`.
+
+A third difference, on `dance`, is an accepted design decision rather than a
+bug: one further-back dancer falls below the subject-size gate, at a cost now
+measured at 11 frames on one clip.
+
+Nine of the eighteen clips turn out to contain shot cuts, which was not knowable
+from single-shot windows — including `microsoft`, the static talking-head
+control. Per-shot re-seeding carries all 56.
+
+Numbers are in `bench/results/`, one directory per run, each with its own
+README. `python bench/audit_readme_numbers.py` re-derives every published figure
+from the committed JSONs and expects `FAILURES: 0`.
 
 ## Start here
 
 1. **Run `python -m vbgr.cli selftest`.** ~15 seconds, no GPU, no downloads. If
    it fails, don't start a batch.
-2. **Run `python -m pytest tests/ -q`.** Expect **158 passed**, about twenty
+2. **Run `python -m pytest tests/ -q`.** Expect **170 passed**, about twenty
    seconds. A lower number means a stale copy of the source.
 3. **Read `docs/BUGS.md`.** Six defects in the v1 outputs that have nothing to
    do with model quality and would survive any model swap. One of them — `ipman`
