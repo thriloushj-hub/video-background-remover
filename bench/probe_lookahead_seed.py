@@ -115,6 +115,11 @@ def run_arm(frames, cfg, label, tail_scan=4):
                         seed_frame=int(getattr(rep, "seed_frame", 0)),
                         first_frame_tails=tails,
                         alpha_bottom=[bottom(x) for x in alphas],
+                        # How MUCH the matte holds, not only how far down it
+                        # reaches.  A shot where the look-ahead changes the cast
+                        # moves area, not the lowest row, so alpha_bottom alone
+                        # cannot tell a repaired mask from a dropped subject.
+                        alpha_mean=[round(float(np.mean(x)), 5) for x in alphas],
                         notes=list(rep.notes)))
     print(f"\n--- arm {label}: lookahead_frames={cfg.seed.lookahead_frames} "
           f"min_tail={cfg.seed.lookahead_min_tail} "
@@ -124,6 +129,8 @@ def run_arm(frames, cfg, label, tail_scan=4):
               f"seeded from frame {s['seed_frame']} of the shot")
         print(f"      seed tails, first frames: {s['first_frame_tails']}")
         print(f"      alpha bottom: {s['alpha_bottom'][:20]}")
+        print(f"      alpha mean over the shot: "
+              f"{sum(s['alpha_mean'])/max(len(s['alpha_mean']),1):.5f}")
         for n in s["notes"]:
             print(f"      note: {n}")
         if not s["notes"]:
@@ -167,10 +174,13 @@ def main():
                 n = min(len(b0["alpha_bottom"]), len(b1["alpha_bottom"]))
                 gain = [b1["alpha_bottom"][j] - b0["alpha_bottom"][j]
                         for j in range(n)]
+                m0 = sum(b0['alpha_mean']) / max(len(b0['alpha_mean']), 1)
+                m1 = sum(b1['alpha_mean']) / max(len(b1['alpha_mean']), 1)
                 print(f"    shot {i}: seed frame {b0['seed_frame']} -> "
                       f"{b1['seed_frame']}, frame 0 bottom "
                       f"{b0['alpha_bottom'][0]} -> {b1['alpha_bottom'][0]}, "
-                      f"mean gain {np.mean(gain):+.1f} rows")
+                      f"mean gain {np.mean(gain):+.1f} rows, "
+                      f"alpha mean {m0:.5f} -> {m1:.5f} ({m1-m0:+.5f})")
                 print(f"      per frame: {gain[:20]}")
 
     if a.out_json:
