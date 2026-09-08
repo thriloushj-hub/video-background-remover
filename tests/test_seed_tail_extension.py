@@ -190,3 +190,59 @@ def test_lookahead_disabled_returns_frame_zero():
         lookahead_frames = 0
     idx, notes = pick_seed_frame(_frames(6), _Det(), _TailSeeder([0.33] * 6), Off(), _select)
     assert idx == 0 and notes == []
+
+
+class _CastDet:
+    """Detector stub whose kept-cast SHRINKS on later frames (butter shot 5)."""
+    def __init__(self, counts):
+        self.counts = counts
+
+    def detect(self, frame):
+        i = int(frame[0, 0, 0])
+        out = []
+        for n in range(self.counts[i]):
+            class D:
+                pass
+            d = D()
+            d.box = (10 + 20 * n, 40, 60 + 20 * n, 260)
+            out.append(d)
+        return out, []
+
+
+def test_lookahead_will_not_trade_a_subject_for_a_cleaner_mask():
+    """butter shot 5: frame 0 fails completely but holds six; frame 3 is clean
+    and holds four. Repairing the mask there costs two dancers, so it stays."""
+    from vbgr.seed import pick_seed_frame
+    idx, notes = pick_seed_frame(
+        _frames(6), _CastDet([6, 5, 5, 4, 4, 4]),
+        _TailSeeder([1.00, 0.030, 0.025, 0.023, 0.023, 0.023]),
+        _Cfg(), _select)
+    assert idx == 0, notes
+    assert any("subjects" in n for n in notes), notes
+
+
+def test_the_cast_guard_can_be_turned_off():
+    from vbgr.seed import pick_seed_frame
+
+    class NoGuard(_Cfg):
+        lookahead_require_same_cast = False
+    idx, _ = pick_seed_frame(
+        _frames(6), _CastDet([6, 5, 5, 4, 4, 4]),
+        _TailSeeder([1.00, 0.030, 0.025, 0.023, 0.023, 0.023]),
+        NoGuard(), _select)
+    assert idx != 0
+
+
+def test_the_cast_guard_leaves_a_steady_cast_alone():
+    """bilibili shot 11: one subject throughout, so the guard never fires."""
+    from vbgr.seed import pick_seed_frame
+    idx, notes = pick_seed_frame(
+        _frames(6), _CastDet([1, 1, 1, 1, 1, 1]),
+        _TailSeeder([0.333, 0.081, 0.071, 0.054, 0.054, 0.054]),
+        _Cfg(), _select)
+    assert idx == 3, notes
+
+
+def test_the_guard_defaults_on():
+    from vbgr.config import Config
+    assert Config().seed.lookahead_require_same_cast is True

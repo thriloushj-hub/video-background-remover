@@ -1,0 +1,2041 @@
+{
+ "k": 4,
+ "results": {
+  "1917": {
+   "n_frames": 724,
+   "starts": [
+    0
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 724,
+     "tails": [
+      0.0434,
+      0.0212,
+      0.0076,
+      0.0101
+     ],
+     "kept": [
+      2,
+      2,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.043 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "asianboss2": {
+   "n_frames": 354,
+   "starts": [
+    0
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 354,
+     "tails": [
+      0.0108,
+      0.0128,
+      0.0,
+      0.0069
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.011 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "bilibili": {
+   "n_frames": 1372,
+   "starts": [
+    0,
+    160,
+    271,
+    436,
+    499,
+    728,
+    838,
+    961,
+    1072,
+    1103,
+    1159,
+    1175,
+    1292
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 160,
+     "tails": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.000 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 2,
+     "a": 160,
+     "b": 271,
+     "tails": [
+      0.0116,
+      0.0034,
+      0.0011,
+      0.0023
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.012 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 3,
+     "a": 271,
+     "b": 436,
+     "tails": [
+      0.0178,
+      0.0178,
+      0.0178,
+      0.0178
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.018 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 4,
+     "a": 436,
+     "b": 499,
+     "tails": [
+      0.0024,
+      0.0,
+      0.0012,
+      0.0012
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.002 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 5,
+     "a": 499,
+     "b": 728,
+     "tails": [
+      0.0141,
+      0.0141,
+      0.0376,
+      0.0202
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.014 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 6,
+     "a": 728,
+     "b": 838,
+     "tails": [
+      0.0267,
+      0.0133,
+      0.0368,
+      0.0113
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.027 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 7,
+     "a": 838,
+     "b": 961,
+     "tails": [
+      0.0086,
+      0.0085,
+      0.0048,
+      0.0061
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.009 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 8,
+     "a": 961,
+     "b": 1072,
+     "tails": [
+      0.0013,
+      0.0252,
+      0.0228,
+      0.0204
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.001 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 9,
+     "a": 1072,
+     "b": 1103,
+     "tails": [
+      0.0688,
+      0.0457,
+      0.0612,
+      0.0757
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.069 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 10,
+     "a": 1103,
+     "b": 1159,
+     "tails": [
+      0.0097,
+      0.0622,
+      0.0682,
+      0.1
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.010 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 11,
+     "a": 1159,
+     "b": 1175,
+     "tails": [
+      0.3326,
+      0.0805,
+      0.0707,
+      0.0536
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 3,
+     "notes": [
+      "seeded from frame 3 of this shot: frame 0 mask tail 0.333, frame 3 0.054"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 12,
+     "a": 1175,
+     "b": 1292,
+     "tails": [
+      0.0085,
+      0.0056,
+      0.0245,
+      0.0281
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.008 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 13,
+     "a": 1292,
+     "b": 1372,
+     "tails": [
+      0.0069,
+      0.0172,
+      0.0092,
+      0.0125
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.007 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "butter": {
+   "n_frames": 382,
+   "starts": [
+    0,
+    97,
+    137,
+    162,
+    199,
+    232,
+    244,
+    271,
+    289
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 97,
+     "tails": [
+      0.0365,
+      0.0277,
+      0.0265,
+      0.0208
+     ],
+     "kept": [
+      4,
+      4,
+      4,
+      4
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.037 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 2,
+     "a": 97,
+     "b": 137,
+     "tails": [
+      0.0207,
+      1.0,
+      0.049,
+      0.1995
+     ],
+     "kept": [
+      4,
+      6,
+      4,
+      4
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.021 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 3,
+     "a": 137,
+     "b": 162,
+     "tails": [
+      0.1089,
+      0.407,
+      0.0703,
+      0.0347
+     ],
+     "kept": [
+      7,
+      7,
+      7,
+      6
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.109 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 4,
+     "a": 162,
+     "b": 199,
+     "tails": [
+      0.0497,
+      1.0,
+      0.0424,
+      0.3177
+     ],
+     "kept": [
+      4,
+      6,
+      6,
+      5
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.050 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 5,
+     "a": 199,
+     "b": 232,
+     "tails": [
+      1.0,
+      0.0304,
+      0.0251,
+      0.023
+     ],
+     "kept": [
+      6,
+      5,
+      5,
+      4
+     ],
+     "seed_frame": 3,
+     "notes": [
+      "seeded from frame 3 of this shot: frame 0 mask tail 1.000, frame 3 0.023"
+     ],
+     "cast_lost": 2,
+     "cast_gained": 0
+    },
+    {
+     "shot": 6,
+     "a": 232,
+     "b": 244,
+     "tails": [
+      0.0213,
+      0.0248,
+      0.0233,
+      0.0431
+     ],
+     "kept": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.021 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 7,
+     "a": 244,
+     "b": 271,
+     "tails": [
+      0.0213,
+      0.0646,
+      0.2089,
+      0.1807
+     ],
+     "kept": [
+      2,
+      3,
+      2,
+      2
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.021 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 8,
+     "a": 271,
+     "b": 289,
+     "tails": [
+      0.1518,
+      0.0596,
+      0.0749,
+      0.0514
+     ],
+     "kept": [
+      7,
+      7,
+      7,
+      7
+     ],
+     "seed_frame": 3,
+     "notes": [
+      "seeded from frame 3 of this shot: frame 0 mask tail 0.152, frame 3 0.051"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 9,
+     "a": 289,
+     "b": 382,
+     "tails": [
+      0.0314,
+      0.0296,
+      0.0314,
+      0.0288
+     ],
+     "kept": [
+      6,
+      6,
+      6,
+      6
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.031 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "codylexi": {
+   "n_frames": 490,
+   "starts": [
+    0
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 490,
+     "tails": [
+      0.0031,
+      0.0041,
+      0.0041,
+      0.0031
+     ],
+     "kept": [
+      2,
+      2,
+      2,
+      2
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.003 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "dance": {
+   "n_frames": 363,
+   "starts": [
+    0,
+    322
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 322,
+     "tails": [
+      0.0445,
+      0.0511,
+      0.0362,
+      0.0283
+     ],
+     "kept": [
+      3,
+      4,
+      4,
+      4
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.045 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 2,
+     "a": 322,
+     "b": 363,
+     "tails": [
+      0.0205,
+      0.0231,
+      0.042,
+      0.0295
+     ],
+     "kept": [
+      4,
+      5,
+      5,
+      5
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.020 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "dance2": {
+   "n_frames": 607,
+   "starts": [
+    0
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 607,
+     "tails": [
+      0.0047,
+      0.0059,
+      0.0162,
+      0.0117
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.005 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "dance3": {
+   "n_frames": 619,
+   "starts": [
+    0
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 619,
+     "tails": [
+      0.0099,
+      0.0121,
+      0.0121,
+      0.0135
+     ],
+     "kept": [
+      2,
+      2,
+      2,
+      2
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.010 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "dlh": {
+   "n_frames": 661,
+   "starts": [
+    0
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 661,
+     "tails": [
+      0.0122,
+      0.0099,
+      0.01,
+      0.01
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.012 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "eddie": {
+   "n_frames": 143,
+   "starts": [
+    0,
+    63
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 63,
+     "tails": [
+      0.0126,
+      0.0154,
+      0.014,
+      0.0155
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.013 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 2,
+     "a": 63,
+     "b": 143,
+     "tails": [
+      0.0043,
+      0.0114,
+      0.0,
+      0.0014
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.004 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "es2": {
+   "n_frames": 879,
+   "starts": [
+    0
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 879,
+     "tails": [
+      0.0103,
+      0.0092,
+      0.0126,
+      0.0103
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.010 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "interview": {
+   "n_frames": 642,
+   "starts": [
+    0,
+    65,
+    258,
+    573
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 65,
+     "tails": [
+      0.0094,
+      0.0094,
+      0.0139,
+      0.0139
+     ],
+     "kept": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.009 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 2,
+     "a": 65,
+     "b": 258,
+     "tails": [
+      0.0134,
+      0.0199,
+      0.0198,
+      0.0185
+     ],
+     "kept": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.013 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 3,
+     "a": 258,
+     "b": 573,
+     "tails": [
+      0.01,
+      0.0062,
+      0.0075,
+      0.0087
+     ],
+     "kept": [
+      2,
+      2,
+      2,
+      2
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.010 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 4,
+     "a": 573,
+     "b": 642,
+     "tails": [
+      0.0075,
+      0.0056,
+      0.0066,
+      0.0047
+     ],
+     "kept": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.007 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "ipman": {
+   "n_frames": 501,
+   "starts": [
+    0,
+    31,
+    57,
+    216,
+    254,
+    280,
+    391
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 31,
+     "tails": [
+      0.0165,
+      0.0165,
+      0.0165,
+      0.0165
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.016 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 2,
+     "a": 31,
+     "b": 57,
+     "tails": [
+      0.008,
+      0.0185,
+      0.0117,
+      0.0179
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.008 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 3,
+     "a": 57,
+     "b": 216,
+     "tails": [
+      0.016,
+      0.0353,
+      0.031,
+      0.0282
+     ],
+     "kept": [
+      2,
+      2,
+      2,
+      2
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.016 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 4,
+     "a": 216,
+     "b": 254,
+     "tails": [
+      0.0115,
+      0.0101,
+      0.0072,
+      0.0101
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.012 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 5,
+     "a": 254,
+     "b": 280,
+     "tails": [
+      0.0203,
+      0.0127,
+      0.0306,
+      0.0204
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.020 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 6,
+     "a": 280,
+     "b": 391,
+     "tails": [
+      0.0059,
+      0.0069,
+      0.0069,
+      0.0083
+     ],
+     "kept": [
+      2,
+      2,
+      2,
+      2
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.006 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 7,
+     "a": 391,
+     "b": 501,
+     "tails": [
+      0.0154,
+      0.0153,
+      0.0,
+      0.0077
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.015 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "jensen": {
+   "n_frames": 509,
+   "starts": [
+    0
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 509,
+     "tails": [
+      0.0093,
+      0.0031,
+      0.0083,
+      0.0072
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.009 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "leo": {
+   "n_frames": 208,
+   "starts": [
+    0
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 208,
+     "tails": [
+      0.0015,
+      0.0015,
+      0.0,
+      0.0015
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.001 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "microsoft": {
+   "n_frames": 567,
+   "starts": [
+    0,
+    245
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 245,
+     "tails": [
+      0.0092,
+      0.005,
+      0.0092,
+      0.0092
+     ],
+     "kept": [
+      2,
+      2,
+      2,
+      2
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.009 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 2,
+     "a": 245,
+     "b": 567,
+     "tails": [
+      0.0123,
+      0.0136,
+      0.0123,
+      0.0123
+     ],
+     "kept": [
+      2,
+      2,
+      2,
+      2
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.012 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "mv": {
+   "n_frames": 588,
+   "starts": [
+    0,
+    17,
+    54,
+    80,
+    109,
+    121,
+    146,
+    172,
+    225,
+    252,
+    283,
+    306,
+    340,
+    362,
+    391,
+    406,
+    422,
+    441,
+    457,
+    481,
+    506,
+    535,
+    563
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 17,
+     "tails": [
+      0.025,
+      0.0,
+      0.0025,
+      0.0013
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.025 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 2,
+     "a": 17,
+     "b": 54,
+     "tails": [
+      0.0206,
+      0.0149,
+      0.0105,
+      0.0119
+     ],
+     "kept": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.021 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 3,
+     "a": 54,
+     "b": 80,
+     "tails": [
+      0.0237,
+      0.0167,
+      0.1257,
+      0.0275
+     ],
+     "kept": [
+      2,
+      2,
+      2,
+      2
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.024 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 4,
+     "a": 80,
+     "b": 109,
+     "tails": [
+      0.0063,
+      0.0094,
+      0.0063,
+      0.0031
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.006 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 5,
+     "a": 109,
+     "b": 121,
+     "tails": [
+      0.0105,
+      0.0076,
+      0.0162,
+      0.0153
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.011 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 6,
+     "a": 121,
+     "b": 146,
+     "tails": [
+      null,
+      null,
+      null,
+      null
+     ],
+     "kept": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: no boxes at frame 0; seeding from it anyway"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 7,
+     "a": 146,
+     "b": 172,
+     "tails": [
+      0.0,
+      0.0161,
+      0.034,
+      0.0803
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.000 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 8,
+     "a": 172,
+     "b": 225,
+     "tails": [
+      0.0078,
+      0.0049,
+      0.0081,
+      0.0089
+     ],
+     "kept": [
+      2,
+      2,
+      2,
+      2
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.008 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 9,
+     "a": 225,
+     "b": 252,
+     "tails": [
+      0.0038,
+      0.0029,
+      0.0048,
+      0.0039
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.004 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 10,
+     "a": 252,
+     "b": 283,
+     "tails": [
+      0.0,
+      0.0019,
+      0.0,
+      0.0094
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.000 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 11,
+     "a": 283,
+     "b": 306,
+     "tails": [
+      0.0069,
+      0.003,
+      0.0082,
+      0.003
+     ],
+     "kept": [
+      2,
+      2,
+      2,
+      2
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.007 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 12,
+     "a": 306,
+     "b": 340,
+     "tails": [
+      0.0088,
+      0.011,
+      0.0074,
+      0.0074
+     ],
+     "kept": [
+      4,
+      4,
+      4,
+      4
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.009 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 13,
+     "a": 340,
+     "b": 362,
+     "tails": [
+      0.0012,
+      0.0172,
+      0.0502,
+      0.0182
+     ],
+     "kept": [
+      1,
+      2,
+      2,
+      2
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.001 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 14,
+     "a": 362,
+     "b": 391,
+     "tails": [
+      0.0165,
+      0.0074,
+      0.0194,
+      0.0119
+     ],
+     "kept": [
+      4,
+      4,
+      4,
+      4
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.017 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 15,
+     "a": 391,
+     "b": 406,
+     "tails": [
+      0.0053,
+      0.0,
+      0.0372,
+      0.0152
+     ],
+     "kept": [
+      2,
+      1,
+      2,
+      2
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.005 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 16,
+     "a": 406,
+     "b": 422,
+     "tails": [
+      0.0154,
+      0.0173,
+      0.0183,
+      0.0192
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.015 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 17,
+     "a": 422,
+     "b": 441,
+     "tails": [
+      0.0073,
+      0.0032,
+      0.03,
+      0.0184
+     ],
+     "kept": [
+      2,
+      2,
+      2,
+      2
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.007 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 18,
+     "a": 441,
+     "b": 457,
+     "tails": [
+      0.0152,
+      0.0192,
+      0.025,
+      0.0312
+     ],
+     "kept": [
+      4,
+      4,
+      4,
+      4
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.015 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 19,
+     "a": 457,
+     "b": 481,
+     "tails": [
+      0.0026,
+      0.0079,
+      0.008,
+      0.0054
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.003 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 20,
+     "a": 481,
+     "b": 506,
+     "tails": [
+      0.0,
+      0.0014,
+      0.0,
+      0.0
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.000 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 21,
+     "a": 506,
+     "b": 535,
+     "tails": [
+      0.0342,
+      0.0189,
+      0.0109,
+      0.0076
+     ],
+     "kept": [
+      2,
+      2,
+      2,
+      2
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.034 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 22,
+     "a": 535,
+     "b": 563,
+     "tails": [
+      0.0097,
+      0.0019,
+      0.0029,
+      0.0079
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.010 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 23,
+     "a": 563,
+     "b": 588,
+     "tails": [
+      0.0139,
+      0.0179,
+      0.0119,
+      0.0099
+     ],
+     "kept": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.014 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "shakira": {
+   "n_frames": 369,
+   "starts": [
+    0,
+    93,
+    185,
+    353
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 93,
+     "tails": [
+      0.0316,
+      0.0486,
+      0.0536,
+      0.0343
+     ],
+     "kept": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.032 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 2,
+     "a": 93,
+     "b": 185,
+     "tails": [
+      0.0487,
+      0.0353,
+      0.0279,
+      0.018
+     ],
+     "kept": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.049 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 3,
+     "a": 185,
+     "b": 353,
+     "tails": [
+      0.0085,
+      0.0095,
+      0.0093,
+      0.0078
+     ],
+     "kept": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.008 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 4,
+     "a": 353,
+     "b": 369,
+     "tails": [
+      0.0306,
+      0.0184,
+      0.0219,
+      0.0235
+     ],
+     "kept": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.031 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  },
+  "tryguys": {
+   "n_frames": 250,
+   "starts": [
+    0,
+    65,
+    149,
+    186
+   ],
+   "shots": [
+    {
+     "shot": 1,
+     "a": 0,
+     "b": 65,
+     "tails": [
+      0.0213,
+      0.0233,
+      0.0208,
+      0.0153
+     ],
+     "kept": [
+      4,
+      4,
+      4,
+      4
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.021 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 2,
+     "a": 65,
+     "b": 149,
+     "tails": [
+      0.0075,
+      0.0054,
+      0.0038,
+      0.0038
+     ],
+     "kept": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.008 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 3,
+     "a": 149,
+     "b": 186,
+     "tails": [
+      0.0101,
+      0.0084,
+      0.0119,
+      0.0129
+     ],
+     "kept": [
+      4,
+      4,
+      4,
+      4
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.010 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    },
+    {
+     "shot": 4,
+     "a": 186,
+     "b": 250,
+     "tails": [
+      0.0079,
+      0.0071,
+      0.0059,
+      0.0079
+     ],
+     "kept": [
+      4,
+      4,
+      4,
+      4
+     ],
+     "seed_frame": 0,
+     "notes": [
+      "look-ahead: frame 0 mask tail 0.008 <= 0.150; not scanning"
+     ],
+     "cast_lost": 0,
+     "cast_gained": 0
+    }
+   ]
+  }
+ },
+ "summary": {
+  "clips": 19,
+  "shots": 79,
+  "moved": 3,
+  "cast_lost": 1,
+  "cast_gained": 0
+ }
+}

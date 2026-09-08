@@ -634,12 +634,22 @@ def pick_seed_frame(frames, detector, seeder, cfg, select_boxes):
                      f"{min_tail:.3f}; not scanning")
         return 0, notes
 
-    best_i, best_t = 0, t0
+    best_i, best_t, best_kept = 0, t0, kept0
     for i in range(1, min(k, len(frames))):
-        ti, _ = tail_at(i)
+        ti, ki = tail_at(i)
         if ti is not None and ti < best_t:
-            best_i, best_t = i, ti
+            best_i, best_t, best_kept = i, ti, ki
     gain = t0 - best_t
+    # Repairing the mask is not worth losing a subject.  A later frame that
+    # keeps fewer people than frame 0 is a different cast, not a better seed --
+    # the mirror of the failure this exists to fix.
+    if (best_i and getattr(cfg, "lookahead_require_same_cast", True)
+            and len(best_kept or []) < len(kept0 or [])):
+        notes.append(f"look-ahead: frame {best_i} is cleaner "
+                     f"({best_t:.3f} vs {t0:.3f}) but holds "
+                     f"{len(best_kept or [])} of {len(kept0 or [])} subjects; "
+                     f"staying at frame 0")
+        return 0, notes
     if best_i and gain >= getattr(cfg, "lookahead_min_gain", 0.10):
         notes.append(f"seeded from frame {best_i} of this shot: frame 0 mask "
                      f"tail {t0:.3f}, frame {best_i} {best_t:.3f}")

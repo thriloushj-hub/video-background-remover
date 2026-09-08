@@ -1,0 +1,110 @@
+  1917 shot 1 [0:724] stay  -> frame 0  tails [0.0434, 0.0212, 0.0076, 0.0101]  kept [2, 2, 1, 1]
+1917: 724f, 1 shot(s), 15.0s
+  asianboss2 shot 1 [0:354] stay  -> frame 0  tails [0.0108, 0.0128, 0.0, 0.0069]  kept [1, 1, 1, 1]
+asianboss2: 354f, 1 shot(s), 6.9s
+[shots] WARNING: 4 detected cut(s) at [968, 1104, 1183, 1300] suppressed by min_shot_len=12. The shot boundary is real; the seed will be propagated across it. Do not treat this clip as a single shot.
+  bilibili shot 1 [0:160] stay  -> frame 0  tails [0.0, 0.0, 0.0, 0.0]  kept [1, 1, 1, 1]
+  bilibili shot 2 [160:271] stay  -> frame 0  tails [0.0116, 0.0034, 0.0011, 0.0023]  kept [1, 1, 1, 1]
+  bilibili shot 3 [271:436] stay  -> frame 0  tails [0.0178, 0.0178, 0.0178, 0.0178]  kept [1, 1, 1, 1]
+  bilibili shot 4 [436:499] stay  -> frame 0  tails [0.0024, 0.0, 0.0012, 0.0012]  kept [1, 1, 1, 1]
+  bilibili shot 5 [499:728] stay  -> frame 0  tails [0.0141, 0.0141, 0.0376, 0.0202]  kept [1, 1, 1, 1]
+  bilibili shot 6 [728:838] stay  -> frame 0  tails [0.0267, 0.0133, 0.0368, 0.0113]  kept [1, 1, 1, 1]
+  bilibili shot 7 [838:961] stay  -> frame 0  tails [0.0086, 0.0085, 0.0048, 0.0061]  kept [1, 1, 1, 1]
+  bilibili shot 8 [961:1072] stay  -> frame 0  tails [0.0013, 0.0252, 0.0228, 0.0204]  kept [1, 1, 1, 1]
+  bilibili shot 9 [1072:1103] stay  -> frame 0  tails [0.0688, 0.0457, 0.0612, 0.0757]  kept [1, 1, 1, 1]
+  bilibili shot10 [1103:1159] stay  -> frame 0  tails [0.0097, 0.0622, 0.0682, 0.1]  kept [1, 1, 1, 1]
+  bilibili shot11 [1159:1175] MOVED -> frame 3  tails [0.3326, 0.0805, 0.0707, 0.0536]  kept [1, 1, 1, 1]  cast lost 0 gained 0
+  bilibili shot12 [1175:1292] stay  -> frame 0  tails [0.0085, 0.0056, 0.0245, 0.0281]  kept [1, 1, 1, 1]
+  bilibili shot13 [1292:1372] stay  -> frame 0  tails [0.0069, 0.0172, 0.0092, 0.0125]  kept [1, 1, 1, 1]
+bilibili: 1372f, 13 shot(s), 28.0s
+[shots] WARNING: 1 detected cut(s) at [300] suppressed by min_shot_len=12. The shot boundary is real; the seed will be propagated across it. Do not treat this clip as a single shot.
+  butter shot 1 [0:97] stay  -> frame 0  tails [0.0365, 0.0277, 0.0265, 0.0208]  kept [4, 4, 4, 4]
+  butter shot 2 [97:137] stay  -> frame 0  tails [0.0207, 1.0, 0.049, 0.1995]  kept [4, 6, 4, 4]
+  butter shot 3 [137:162] stay  -> frame 0  tails [0.1089, 0.407, 0.0703, 0.0347]  kept [7, 7, 7, 6]
+  butter shot 4 [162:199] stay  -> frame 0  tails [0.0497, 1.0, 0.0424, 0.3177]  kept [4, 6, 6, 5]
+  butter shot 5 [199:232] MOVED -> frame 3  tails [1.0, 0.0304, 0.0251, 0.023]  kept [6, 5, 5, 4]  cast lost 2 gained 0
+  butter shot 6 [232:244] stay  -> frame 0  tails [0.0213, 0.0248, 0.0233, 0.0431]  kept [3, 3, 3, 3]
+  butter shot 7 [244:271] stay  -> frame 0  tails [0.0213, 0.0646, 0.2089, 0.1807]  kept [2, 3, 2, 2]
+  butter shot 8 [271:289] MOVED -> frame 3  tails [0.1518, 0.0596, 0.0749, 0.0514]  kept [7, 7, 7, 7]  cast lost 0 gained 0
+  butter shot 9 [289:382] stay  -> frame 0  tails [0.0314, 0.0296, 0.0314, 0.0288]  kept [6, 6, 6, 6]
+butter: 382f, 9 shot(s), 8.8s
+  codylexi shot 1 [0:490] stay  -> frame 0  tails [0.0031, 0.0041, 0.0041, 0.0031]  kept [2, 2, 2, 2]
+codylexi: 490f, 1 shot(s), 7.3s
+  dance shot 1 [0:322] stay  -> frame 0  tails [0.0445, 0.0511, 0.0362, 0.0283]  kept [3, 4, 4, 4]
+  dance shot 2 [322:363] stay  -> frame 0  tails [0.0205, 0.0231, 0.042, 0.0295]  kept [4, 5, 5, 5]
+dance: 363f, 2 shot(s), 6.2s
+  dance2 shot 1 [0:607] stay  -> frame 0  tails [0.0047, 0.0059, 0.0162, 0.0117]  kept [1, 1, 1, 1]
+dance2: 607f, 1 shot(s), 9.1s
+  dance3 shot 1 [0:619] stay  -> frame 0  tails [0.0099, 0.0121, 0.0121, 0.0135]  kept [2, 2, 2, 2]
+dance3: 619f, 1 shot(s), 9.3s
+  dlh shot 1 [0:661] stay  -> frame 0  tails [0.0122, 0.0099, 0.01, 0.01]  kept [1, 1, 1, 1]
+dlh: 661f, 1 shot(s), 9.9s
+  eddie shot 1 [0:63] stay  -> frame 0  tails [0.0126, 0.0154, 0.014, 0.0155]  kept [1, 1, 1, 1]
+  eddie shot 2 [63:143] stay  -> frame 0  tails [0.0043, 0.0114, 0.0, 0.0014]  kept [1, 1, 1, 1]
+eddie: 143f, 2 shot(s), 2.6s
+  es2 shot 1 [0:879] stay  -> frame 0  tails [0.0103, 0.0092, 0.0126, 0.0103]  kept [1, 1, 1, 1]
+es2: 879f, 1 shot(s), 13.2s
+  interview shot 1 [0:65] stay  -> frame 0  tails [0.0094, 0.0094, 0.0139, 0.0139]  kept [3, 3, 3, 3]
+  interview shot 2 [65:258] stay  -> frame 0  tails [0.0134, 0.0199, 0.0198, 0.0185]  kept [3, 3, 3, 3]
+  interview shot 3 [258:573] stay  -> frame 0  tails [0.01, 0.0062, 0.0075, 0.0087]  kept [2, 2, 2, 2]
+  interview shot 4 [573:642] stay  -> frame 0  tails [0.0075, 0.0056, 0.0066, 0.0047]  kept [3, 3, 3, 3]
+interview: 642f, 4 shot(s), 12.1s
+[shots] WARNING: 1 detected cut(s) at [402] suppressed by min_shot_len=12. The shot boundary is real; the seed will be propagated across it. Do not treat this clip as a single shot.
+  ipman shot 1 [0:31] stay  -> frame 0  tails [0.0165, 0.0165, 0.0165, 0.0165]  kept [1, 1, 1, 1]
+  ipman shot 2 [31:57] stay  -> frame 0  tails [0.008, 0.0185, 0.0117, 0.0179]  kept [1, 1, 1, 1]
+  ipman shot 3 [57:216] stay  -> frame 0  tails [0.016, 0.0353, 0.031, 0.0282]  kept [2, 2, 2, 2]
+  ipman shot 4 [216:254] stay  -> frame 0  tails [0.0115, 0.0101, 0.0072, 0.0101]  kept [1, 1, 1, 1]
+  ipman shot 5 [254:280] stay  -> frame 0  tails [0.0203, 0.0127, 0.0306, 0.0204]  kept [1, 1, 1, 1]
+  ipman shot 6 [280:391] stay  -> frame 0  tails [0.0059, 0.0069, 0.0069, 0.0083]  kept [2, 2, 2, 2]
+  ipman shot 7 [391:501] stay  -> frame 0  tails [0.0154, 0.0153, 0.0, 0.0077]  kept [1, 1, 1, 1]
+ipman: 501f, 7 shot(s), 8.4s
+  jensen shot 1 [0:509] stay  -> frame 0  tails [0.0093, 0.0031, 0.0083, 0.0072]  kept [1, 1, 1, 1]
+jensen: 509f, 1 shot(s), 7.7s
+  leo shot 1 [0:208] stay  -> frame 0  tails [0.0015, 0.0015, 0.0, 0.0015]  kept [1, 1, 1, 1]
+leo: 208f, 1 shot(s), 2.9s
+  microsoft shot 1 [0:245] stay  -> frame 0  tails [0.0092, 0.005, 0.0092, 0.0092]  kept [2, 2, 2, 2]
+  microsoft shot 2 [245:567] stay  -> frame 0  tails [0.0123, 0.0136, 0.0123, 0.0123]  kept [2, 2, 2, 2]
+microsoft: 567f, 2 shot(s), 8.2s
+[shots] WARNING: 6 detected cut(s) at [111, 119, 120, 123, 130, 131] suppressed by min_shot_len=12. The shot boundary is real; the seed will be propagated across it. Do not treat this clip as a single shot.
+  mv shot 1 [0:17] stay  -> frame 0  tails [0.025, 0.0, 0.0025, 0.0013]  kept [1, 1, 1, 1]
+  mv shot 2 [17:54] stay  -> frame 0  tails [0.0206, 0.0149, 0.0105, 0.0119]  kept [3, 3, 3, 3]
+  mv shot 3 [54:80] stay  -> frame 0  tails [0.0237, 0.0167, 0.1257, 0.0275]  kept [2, 2, 2, 2]
+  mv shot 4 [80:109] stay  -> frame 0  tails [0.0063, 0.0094, 0.0063, 0.0031]  kept [1, 1, 1, 1]
+  mv shot 5 [109:121] stay  -> frame 0  tails [0.0105, 0.0076, 0.0162, 0.0153]  kept [1, 1, 1, 1]
+  mv shot 6 [121:146] stay  -> frame 0  tails [None, None, None, None]  kept [0, 0, 0, 0]
+  mv shot 7 [146:172] stay  -> frame 0  tails [0.0, 0.0161, 0.034, 0.0803]  kept [1, 1, 1, 1]
+  mv shot 8 [172:225] stay  -> frame 0  tails [0.0078, 0.0049, 0.0081, 0.0089]  kept [2, 2, 2, 2]
+  mv shot 9 [225:252] stay  -> frame 0  tails [0.0038, 0.0029, 0.0048, 0.0039]  kept [1, 1, 1, 1]
+  mv shot10 [252:283] stay  -> frame 0  tails [0.0, 0.0019, 0.0, 0.0094]  kept [1, 1, 1, 1]
+  mv shot11 [283:306] stay  -> frame 0  tails [0.0069, 0.003, 0.0082, 0.003]  kept [2, 2, 2, 2]
+  mv shot12 [306:340] stay  -> frame 0  tails [0.0088, 0.011, 0.0074, 0.0074]  kept [4, 4, 4, 4]
+  mv shot13 [340:362] stay  -> frame 0  tails [0.0012, 0.0172, 0.0502, 0.0182]  kept [1, 2, 2, 2]
+  mv shot14 [362:391] stay  -> frame 0  tails [0.0165, 0.0074, 0.0194, 0.0119]  kept [4, 4, 4, 4]
+  mv shot15 [391:406] stay  -> frame 0  tails [0.0053, 0.0, 0.0372, 0.0152]  kept [2, 1, 2, 2]
+  mv shot16 [406:422] stay  -> frame 0  tails [0.0154, 0.0173, 0.0183, 0.0192]  kept [1, 1, 1, 1]
+  mv shot17 [422:441] stay  -> frame 0  tails [0.0073, 0.0032, 0.03, 0.0184]  kept [2, 2, 2, 2]
+  mv shot18 [441:457] stay  -> frame 0  tails [0.0152, 0.0192, 0.025, 0.0312]  kept [4, 4, 4, 4]
+  mv shot19 [457:481] stay  -> frame 0  tails [0.0026, 0.0079, 0.008, 0.0054]  kept [1, 1, 1, 1]
+  mv shot20 [481:506] stay  -> frame 0  tails [0.0, 0.0014, 0.0, 0.0]  kept [1, 1, 1, 1]
+  mv shot21 [506:535] stay  -> frame 0  tails [0.0342, 0.0189, 0.0109, 0.0076]  kept [2, 2, 2, 2]
+  mv shot22 [535:563] stay  -> frame 0  tails [0.0097, 0.0019, 0.0029, 0.0079]  kept [1, 1, 1, 1]
+  mv shot23 [563:588] stay  -> frame 0  tails [0.0139, 0.0179, 0.0119, 0.0099]  kept [1, 1, 1, 1]
+mv: 588f, 23 shot(s), 16.5s
+  shakira shot 1 [0:93] stay  -> frame 0  tails [0.0316, 0.0486, 0.0536, 0.0343]  kept [3, 3, 3, 3]
+  shakira shot 2 [93:185] stay  -> frame 0  tails [0.0487, 0.0353, 0.0279, 0.018]  kept [3, 3, 3, 3]
+  shakira shot 3 [185:353] stay  -> frame 0  tails [0.0085, 0.0095, 0.0093, 0.0078]  kept [3, 3, 3, 3]
+  shakira shot 4 [353:369] stay  -> frame 0  tails [0.0306, 0.0184, 0.0219, 0.0235]  kept [3, 3, 3, 3]
+shakira: 369f, 4 shot(s), 6.9s
+  tryguys shot 1 [0:65] stay  -> frame 0  tails [0.0213, 0.0233, 0.0208, 0.0153]  kept [4, 4, 4, 4]
+  tryguys shot 2 [65:149] stay  -> frame 0  tails [0.0075, 0.0054, 0.0038, 0.0038]  kept [3, 3, 3, 3]
+  tryguys shot 3 [149:186] stay  -> frame 0  tails [0.0101, 0.0084, 0.0119, 0.0129]  kept [4, 4, 4, 4]
+  tryguys shot 4 [186:250] stay  -> frame 0  tails [0.0079, 0.0071, 0.0059, 0.0079]  kept [4, 4, 4, 4]
+tryguys: 250f, 4 shot(s), 5.5s
+
+=== SUMMARY ===
+clips 19  shots 79  moved 3  of those, cast LOST on 1, cast gained on 0
+  MOVED bilibili shot11 [1159:1175] -> frame 3  lost 0 gained 0
+  MOVED butter shot5 [199:232] -> frame 3  lost 2 gained 0
+  MOVED butter shot8 [271:289] -> frame 3  lost 0 gained 0
+total 184.4s
+wrote bench/results/run_2026-09-08_sweep/sweep_lookahead.json

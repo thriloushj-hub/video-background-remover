@@ -138,6 +138,14 @@ class SeedConfig:
     lookahead_frames: int = 0
     lookahead_min_tail: float = 0.15
     lookahead_min_gain: float = 0.10
+    # Never move the seed to a frame that holds FEWER people than frame 0.
+    # The 8 Sep sweep over all 79 shots in the delivery found exactly one shot
+    # where the best frame drops subjects -- butter shot 5, six kept at frame 0
+    # and four at frame 3 -- so repairing the mask and losing two dancers are
+    # the same move there.  Measured, that shot came back inside the pipeline's
+    # own run-to-run noise because the entrant passes re-seed them; this guard
+    # is for the footage where nothing catches them.  Cost is one comparison.
+    lookahead_require_same_cast: bool = True
     # Mask R-CNN seeding. Boxes still come from the pipeline's own detector,
     # so the gates behave exactly as tested; the seeder only answers "what is
     # the mask inside this box". A box no instance matches is skipped with a
