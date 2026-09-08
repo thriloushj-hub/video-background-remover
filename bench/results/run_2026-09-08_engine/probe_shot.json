@@ -1,0 +1,57 @@
+{
+ "baseline": {
+  "seed_bottom": 843,
+  "after_erode_dilate": 849,
+  "box_bottom": 894,
+  "alpha_bottom": [
+   839,
+   854,
+   883,
+   927,
+   951,
+   961,
+   981,
+   1002,
+   1014,
+   1039,
+   1063,
+   1076,
+   1079,
+   1079,
+   1079,
+   1079
+  ],
+  "notes": [
+   "text prompt unavailable: NotImplementedError"
+  ],
+  "extend_tail_max": 0.0
+ },
+ "extend:0.15": {
+  "seed_bottom": 893,
+  "after_erode_dilate": 899,
+  "box_bottom": 894,
+  "alpha_bottom": [
+   892,
+   907,
+   916,
+   933,
+   951,
+   961,
+   982,
+   1003,
+   1015,
+   1039,
+   1063,
+   1076,
+   1079,
+   1079,
+   1079,
+   1079
+  ],
+  "notes": [
+   "extended 1 short mask tail(s) to the box",
+   "text prompt unavailable: NotImplementedError"
+  ],
+  "extend_tail_max": 0.15
+ }
+}

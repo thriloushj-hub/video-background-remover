@@ -78,33 +78,47 @@ could not see**, both on the failure modes named in the original brief:
   **The earlier diagnosis here was wrong and is withdrawn** — see below. Not
   fixed. See `bench/results/run_2026-09-07_rest11/`.
 
-> [!warning] The bilibili diagnosis is withdrawn (7 September 2026)
-> This section previously said the loss was "traced to the mask stage rather
-> than the detector — the person box is right and the mask is up to 298 px
-> short". **Neither half of that reproduces.**
+> [!warning] The withdrawal above is itself withdrawn (8 September 2026)
+> On 7 September this section retracted the "mask stage / 298 px" diagnosis on
+> the strength of a CPU reproduction. **That retraction was wrong and the
+> original diagnosis is reinstated.**
 >
-> That claim came from an ad-hoc Colab cell that was never committed, so it
-> could not be re-derived. Re-running the **shipped** `build_seed` on the same
-> frame on CPU gives the same detection (box `822,1..1303,894`, conf `0.932`,
-> matching the original log exactly) but a fused seed reaching **row 825, 68 px
-> short of the box — not 298**.
+> The reproduction read a PNG-free path: I had written the frame out as JPEG
+> before feeding it to the seeder. Re-running the shipped `build_seed` on the
+> same frame decoded **losslessly** gives:
 >
-> And the seed is not what loses the boots. The shipped alpha at f1159 reaches
-> **row 588**, which is **237 rows above the seed it was built from**. Walking
-> the CPU stages the pipeline applies to a first frame — `erode_dilate` then
-> `guided_filter` — takes the seed from 825 to **831**, so neither of them cuts
-> it either. The loss happens **inside the matting engine**, on the first frame
-> of the shot, between a mask reaching 831 and an alpha reaching 588.
+> | frame 1159 decoded as | instance mask bottom | short of its box (894) by |
+> |---|---|---|
+> | **lossless PNG** | **596** | **298 px** |
+> | JPEG quality 95 | 825 | 69 px |
+> | JPEG quality 100 | 825 | 69 px |
 >
-> That puts bilibili in the same family as the frame-boundary falloff above
-> rather than in a family of its own: **the engine under-covers relative to its
-> own seed, worst at a subject's lower extremity and in low-contrast regions**
-> (black boots on a dark floor; a dark polo at the bottom of frame; a
-> motion-blurred hand). Confirming it and fixing it needs a GPU.
+> The lossless figure reproduces the original GPU run exactly. **A JPEG
+> re-encode at quality 100 moved a Mask R-CNN mask boundary by 229 pixels**, and
+> that artefact is the entire basis on which the diagnosis was retracted.
 >
-> A process note, because it is the reason this shipped: the README audit gate
-> re-derives every figure from **committed** data, and 298 px came from a script
-> that was never committed, so the gate had nothing to check it against.
+> The engine is also cleared: given a seed reaching 596 it returns alpha
+> reaching **587**, so it follows its seed faithfully. A two-shot reproduction
+> on an A100 returns the shipped numbers frame for frame — alpha bottoms
+> `587, 598, 607, … 797` against the shipped `588 … 797` — and the same shot run
+> alone with a fresh pipeline is identical, so nothing leaks across a cut
+> either.
+>
+> **The cause is the mask stage, as originally stated.** What is new is the fix:
+> the mask head fails on this subject *intermittently*, not persistently. Seed
+> tail as a fraction of box height, on lossless frames:
+>
+> | frame | 1159 | 1160 | 1161 | 1162 | 1163 | 1165 | 1170 | 1176 |
+> |---|---|---|---|---|---|---|---|---|
+> | tail | **0.333** | 0.080 | 0.071 | 0.054 | **0.332** | 0.050 | 0.121 | 0.006 |
+>
+> So a shot seeded one or two frames later gets a mask 51–74 px short instead of
+> 298, and the bad frames sit clear of the good ones (0.33 against a worst-good
+> of 0.12). That is 5.7, the look-ahead seed, and it is the work in progress.
+>
+> **Anything measured from a re-encoded frame in this repository is suspect and
+> is being re-derived from lossless decodes.** That includes the 56-shot-start
+> sweep run on 7 September.
 
 A third difference, on `dance`, is an accepted design decision rather than a
 bug: one further-back dancer falls below the subject-size gate, at a cost now
