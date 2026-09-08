@@ -122,6 +122,22 @@ class SeedConfig:
     # capped: "extend the mask to its box" without those limits is the shape of
     # findings this project has already retracted.
     extend_tail_max: float = 0.0
+    # 5.7, the look-ahead seed.  A shot is seeded from ONE frame and every later
+    # frame inherits it until the next cut, so a frame the mask head happens to
+    # fail on costs the whole shot.  On bilibili f1159 the mask stops 298 px
+    # short of its box; one frame later it stops 74 px short, and the boots are
+    # missing for exactly as long as the shot lasts.
+    #
+    # So: look at the first `lookahead_frames` frames and seed from the best of
+    # them.  The guard is RELATIVE, not a global threshold, because a threshold
+    # on the bad frame is what 3.3a showed cannot separate pose from defect:
+    #   - only scan at all when frame 0's tail exceeds `lookahead_min_tail`;
+    #   - only move when the best frame beats frame 0 by `lookahead_min_gain`.
+    # A genuinely half-occluded subject (behind a desk) is equally occluded in
+    # all of them, so there is no gain and nothing moves.  0 disables it.
+    lookahead_frames: int = 0
+    lookahead_min_tail: float = 0.15
+    lookahead_min_gain: float = 0.10
     # Mask R-CNN seeding. Boxes still come from the pipeline's own detector,
     # so the gates behave exactly as tested; the seeder only answers "what is
     # the mask inside this box". A box no instance matches is skipped with a

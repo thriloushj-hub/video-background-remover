@@ -40,7 +40,8 @@ from .engines.base import MattingEngine, build_engine
 from .gate import QualityGate
 from .reid import (IdentityBank, FeatureExtractor, uncovered_boxes,
                    box_coverage, mask_coverage, confirm_uncovered)
-from .seed import SAM3Seeder, build_seed, build_seeder, split_by_person
+from .seed import (SAM3Seeder, build_seed, build_seeder, pick_seed_frame,
+                   split_by_person)
 
 
 # --------------------------------------------------------------------------- #
@@ -58,6 +59,8 @@ class ShotReport:
     # usable engine exposes the hook.
     bad_frames: int = 0
     reseeds: int = 0
+    # 5.7: which frame of the shot the seed was built from. 0 is the default.
+    seed_frame: int = 0
     reentries: int = 0
     high_motion_frames: int = 0
     notes: List[str] = field(default_factory=list)
@@ -251,7 +254,37 @@ class Pipeline:
             rep.notes.append("no subject detected; emitting empty alpha")
             return np.zeros((len(frames), H, W), np.float32), rep
 
-        seed = build_seed(frames[0], self.seeder, kept,
+        # 5.7: the shot may be seeded from a later frame than its first.  The
+        # mask head fails intermittently -- on bilibili it stops 298 px short of
+        # its box at f1159 and 74 px short at f1160 -- and a shot inherits its
+        # seed for its whole length, so the frame this is built from is the
+        # whole shot.  pick_seed_frame returns 0 unless a later frame is
+        # materially better, so the default path is unchanged.
+        seed_at = 0
+        if getattr(cfg.seed, "lookahead_frames", 0):
+            seed_at, la_notes = pick_seed_frame(
+                frames, self.detector, self.seeder, cfg.seed,
+                lambda pe, w, h: select_person_boxes(
+                    pe, w, h, cfg.detect.person_rel_size_min,
+                    cfg.detect.box_score_ratio, cfg.detect.person_rel_area_min,
+                    cfg.detect.conf_abs_min))
+            rep.notes.extend(la_notes)
+        if seed_at:
+            people, props = self.detector.detect(frames[seed_at])
+            kept, _ = select_person_boxes(
+                people, W, H, cfg.detect.person_rel_size_min,
+                cfg.detect.box_score_ratio, cfg.detect.person_rel_area_min,
+                cfg.detect.conf_abs_min)
+            if not kept:                       # never worse than before
+                seed_at = 0
+                people, props = self.detector.detect(frames[0])
+                kept, _ = select_person_boxes(
+                    people, W, H, cfg.detect.person_rel_size_min,
+                    cfg.detect.box_score_ratio, cfg.detect.person_rel_area_min,
+                    cfg.detect.conf_abs_min)
+        rep.seed_frame = seed_at
+
+        seed = build_seed(frames[seed_at], self.seeder, kept,
                           held_props(props, kept), cfg.seed)
         seed_mask = refine.erode_dilate(
             seed.mask, cfg.matting.r_erode, cfg.matting.r_dilate)
@@ -272,11 +305,15 @@ class Pipeline:
         # held props, hole filling) is dropped on the way.  It returns [] when
         # there is nothing to split, and then this behaves exactly as before.
         self.engine.reset()
+        # When the seed came from a later frame, matte forward from there and
+        # then backward over the frames before it, so the earlier frames are
+        # covered by the same good seed rather than a worse one.
+        fwd_frames = frames[seed_at:] if seed_at else frames
         if self.engine.is_streaming:
-            alphas, rep = self._matte_streaming(frames, seed_mask, rep)
+            alphas, rep = self._matte_streaming(fwd_frames, seed_mask, rep)
         else:
             alphas, n_obj = self._matte_by_person(
-                frames, seed, seed_mask, cfg.matting.n_warmup_static)
+                fwd_frames, seed, seed_mask, cfg.matting.n_warmup_static)
             if n_obj > 1:
                 rep.notes.append(f"seeded {n_obj} objects, one per person")
             # Per-subject coverage straight from the tracker.  Without it
@@ -286,6 +323,19 @@ class Pipeline:
             oa = getattr(self.engine, "object_areas", None)
             if oa is not None:
                 rep.object_areas = np.asarray(oa, np.float32).tolist()
+
+        if seed_at:
+            back = frames[:seed_at + 1][::-1]
+            self.engine.reset()
+            if self.engine.is_streaming:
+                b_alphas, rep = self._matte_streaming(back, seed_mask, rep)
+            else:
+                b_alphas, _ = self._matte_by_person(
+                    back, seed, seed_mask, cfg.matting.n_warmup_static)
+            self.engine.reset()
+            alphas = np.concatenate([np.asarray(b_alphas)[::-1][:seed_at],
+                                     np.asarray(alphas)], axis=0)
+            rep.notes.append(f"backfilled {seed_at} frame(s) before the seed")
 
         # ---- reverse pass for late entrants ------------------------------- #
         if cfg.reid.enabled:

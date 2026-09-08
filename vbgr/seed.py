@@ -590,6 +590,54 @@ def extend_short_tails(concept: Sequence[np.ndarray], seeder,
     return out, n
 
 
+def pick_seed_frame(frames, detector, seeder, cfg, select_boxes):
+    """Which frame of this shot should the seed be built from?
+
+    5.7.  Returns ``(index, notes)``.  Index 0 -- the current behaviour -- unless
+    a later frame in the first ``cfg.lookahead_frames`` is materially better.
+
+    The test is deliberately RELATIVE.  A global threshold on the seed frame is
+    what 3.3a proved cannot work: box fill is a function of pose, and every
+    absolute cut put a keep between two drops.  Here the comparison is the same
+    subject a few frames apart, so pose and framing are nearly constant and the
+    only thing that changes is whether the mask head succeeded.  A person who is
+    genuinely half-occluded is equally occluded in all of them, gains nothing,
+    and does not move the seed.
+
+    Cheap by construction: the scan only runs when frame 0 already looks bad,
+    so a healthy shot pays one extra tail measurement and nothing else.
+    """
+    notes = []
+    k = int(getattr(cfg, "lookahead_frames", 0) or 0)
+    if k <= 1 or len(frames) < 2:
+        return 0, notes
+    H, W = frames[0].shape[:2]
+
+    def tail_at(i):
+        people, props = detector.detect(frames[i])
+        kept, _ = select_boxes(people, W, H)
+        if not kept:
+            return None, None
+        return worst_seed_tail(seeder, frames[i], [d.box for d in kept]), kept
+
+    t0, kept0 = tail_at(0)
+    if t0 is None or t0 <= getattr(cfg, "lookahead_min_tail", 0.15):
+        return 0, notes
+
+    best_i, best_t = 0, t0
+    for i in range(1, min(k, len(frames))):
+        ti, _ = tail_at(i)
+        if ti is not None and ti < best_t:
+            best_i, best_t = i, ti
+    gain = t0 - best_t
+    if best_i and gain >= getattr(cfg, "lookahead_min_gain", 0.10):
+        notes.append(f"seeded from frame {best_i} of this shot: frame 0 mask "
+                     f"tail {t0:.3f}, frame {best_i} {best_t:.3f}")
+        return best_i, notes
+    notes.append(f"frame 0 mask tail {t0:.3f}; no better frame in the first {k}")
+    return 0, notes
+
+
 # --------------------------------------------------------------------------- #
 # The full seed
 # --------------------------------------------------------------------------- #
