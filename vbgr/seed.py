@@ -620,8 +620,18 @@ def pick_seed_frame(frames, detector, seeder, cfg, select_boxes):
             return None, None
         return worst_seed_tail(seeder, frames[i], [d.box for d in kept]), kept
 
+    min_tail = getattr(cfg, "lookahead_min_tail", 0.15)
     t0, kept0 = tail_at(0)
-    if t0 is None or t0 <= getattr(cfg, "lookahead_min_tail", 0.15):
+    # Say so when the scan declines.  A look-ahead arm that changes nothing has
+    # two completely different explanations -- the scan never ran, or it ran and
+    # found frame 0 healthy -- and a silent return makes them indistinguishable
+    # in a run log.  That ambiguity is what made the 8 Sep GPU arm unreadable.
+    if t0 is None:
+        notes.append("look-ahead: no boxes at frame 0; seeding from it anyway")
+        return 0, notes
+    if t0 <= min_tail:
+        notes.append(f"look-ahead: frame 0 mask tail {t0:.3f} <= "
+                     f"{min_tail:.3f}; not scanning")
         return 0, notes
 
     best_i, best_t = 0, t0

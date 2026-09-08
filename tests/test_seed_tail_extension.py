@@ -146,10 +146,28 @@ def test_lookahead_moves_to_a_better_frame():
 
 
 def test_lookahead_stays_when_frame_zero_is_healthy():
+    """Stays put -- and SAYS it stayed put.
+
+    A silent return here is what made the 8 Sep GPU arm unreadable: an arm that
+    changed nothing could equally mean the scan never ran or the scan ran and
+    declined, and the run log could not tell the two apart.
+    """
     from vbgr.seed import pick_seed_frame
     idx, notes = pick_seed_frame(_frames(6), _Det(), _TailSeeder([0.05, 0.02, 0.02, 0.02, 0.02, 0.02]),
                                  _Cfg(), _select)
-    assert idx == 0 and notes == []
+    assert idx == 0
+    assert any("not scanning" in n for n in notes), notes
+
+
+def test_lookahead_declining_is_never_silent():
+    """Every enabled outcome leaves a note; only the disabled path is silent."""
+    from vbgr.seed import pick_seed_frame
+    for tails in ([0.05] * 6,                       # frame 0 healthy
+                  [0.40, 0.39, 0.41, 0.40, 0.38, 0.40],   # persistently occluded
+                  [0.33, 0.08, 0.07, 0.05, 0.33, 0.05]):  # moves
+        _idx, notes = pick_seed_frame(_frames(6), _Det(), _TailSeeder(tails),
+                                      _Cfg(), _select)
+        assert notes, tails
 
 
 def test_lookahead_stays_for_a_persistently_occluded_subject():
