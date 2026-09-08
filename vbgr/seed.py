@@ -524,14 +524,31 @@ def seed_tail_fraction(mask: np.ndarray, box: Box) -> float:
     return float(max(bottom, top))
 
 
-def worst_seed_tail(seeder, frame_bgr: np.ndarray, boxes: Sequence[Box]) -> float:
+def seeder_can_measure_tails(seeder) -> bool:
+    """Can this seeder answer "what mask is inside this box"?
+
+    Only `MaskRCNNSeeder` implements `_match`; `SAM3Seeder` does not.  The
+    look-ahead is built on that question, so it has to ASK rather than assume --
+    four times on this project a capability was taken from the paper instead of
+    checked against the object, and turning `lookahead_frames` on by default is
+    exactly the change that would have turned the fifth into a crash.
+    """
+    return callable(getattr(seeder, "_match", None))
+
+
+def worst_seed_tail(seeder, frame_bgr: np.ndarray, boxes: Sequence[Box]):
     """The worst `seed_tail_fraction` over the boxes kept for this frame.
 
     A box that matches no instance at all counts as 1.0: `masks_from_boxes`
     skips it, so that subject would not be seeded on this frame either.
+
+    Returns ``None`` when the seeder cannot answer at all, which is a different
+    thing from a tail of 0.0 and must not be read as a healthy frame.
     """
     if not boxes:
         return 0.0
+    if not seeder_can_measure_tails(seeder):
+        return None
     aligned = seeder._match(frame_bgr, list(boxes), None)
     return max(seed_tail_fraction(m, b) for m, b in zip(aligned, boxes))
 
@@ -610,6 +627,13 @@ def pick_seed_frame(frames, detector, seeder, cfg, select_boxes):
     notes = []
     k = int(getattr(cfg, "lookahead_frames", 0) or 0)
     if k <= 1 or len(frames) < 2:
+        return 0, notes
+    if not seeder_can_measure_tails(seeder):
+        # Say so once rather than raising.  `lookahead_frames` now defaults to
+        # on, and a default must not turn a seeder backend that has never
+        # implemented `_match` into a crash.
+        notes.append("look-ahead: this seeder cannot measure mask tails; "
+                     "seeding from frame 0")
         return 0, notes
     H, W = frames[0].shape[:2]
 

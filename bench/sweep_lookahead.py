@@ -132,8 +132,9 @@ def main():
                     continue
                 bx = [list(map(int, d.box)) for d in kept]
                 boxes_at[i] = bx
-                tails.append(round(float(worst_seed_tail(
-                    seeder=pipe.seeder, frame_bgr=shot[i], boxes=[d.box for d in kept])), 4))
+                t = worst_seed_tail(seeder=pipe.seeder, frame_bgr=shot[i],
+                                    boxes=[d.box for d in kept])
+                tails.append(None if t is None else round(float(t), 4))
             idx, notes = pick_seed_frame(shot, pipe.detector, pipe.seeder, cfg.seed, sel)
             lost = gained = 0
             if idx:

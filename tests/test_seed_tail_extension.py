@@ -178,9 +178,24 @@ def test_lookahead_stays_for_a_persistently_occluded_subject():
     assert idx == 0
 
 
-def test_lookahead_is_off_by_default():
+def test_lookahead_is_on_by_default():
+    """Turned on 8 Sep after the 79-shot sweep. See config.py for the numbers."""
     from vbgr.config import Config
-    assert Config().seed.lookahead_frames == 0
+    assert Config().seed.lookahead_frames == 4
+
+
+def test_a_seeder_that_cannot_measure_tails_does_not_crash():
+    """The default is on, so a backend without `_match` must decline, not raise.
+
+    Only MaskRCNNSeeder implements it; SAM3Seeder does not.
+    """
+    from vbgr.seed import pick_seed_frame
+
+    class Bare:                                  # no _match
+        pass
+    idx, notes = pick_seed_frame(_frames(6), _Det(), Bare(), _Cfg(), _select)
+    assert idx == 0
+    assert any("cannot measure mask tails" in n for n in notes), notes
 
 
 def test_lookahead_disabled_returns_frame_zero():

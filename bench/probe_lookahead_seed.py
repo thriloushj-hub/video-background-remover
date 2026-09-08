@@ -89,9 +89,9 @@ def measure_tails(pipe, cfg, frames, k):
         if not kept:
             out.append(None)
             continue
-        out.append(round(float(worst_seed_tail(
-            seeder=pipe.seeder, frame_bgr=frames[i],
-            boxes=[d.box for d in kept])), 4))
+        t = worst_seed_tail(seeder=pipe.seeder, frame_bgr=frames[i],
+                            boxes=[d.box for d in kept])
+        out.append(None if t is None else round(float(t), 4))
     return out
 
 
@@ -145,7 +145,11 @@ def main():
     ap.add_argument("--config", required=True,
                     help="pipeline config (json or yaml): engine, checkpoint, repo_dir")
     ap.add_argument("--arm", action="append", default=[],
-                    help="off | lookahead:<k>   (repeatable; order is compared pairwise)")
+                    help="off | default | lookahead:<k>   (repeatable; compared "
+                         "pairwise in order).  'default' leaves the config's own "
+                         "lookahead_frames alone, so the arm is the SHIPPED path "
+                         "rather than a flag -- which is the only arm that can "
+                         "confirm a changed default.")
     ap.add_argument("--out-json", default=None)
     a = ap.parse_args()
 
@@ -158,8 +162,12 @@ def main():
     results = {}
     for arm in (a.arm or ["off", "lookahead:4"]):
         cfg = load_config(a.config)
-        cfg.seed.lookahead_frames = (
-            int(arm.split(":", 1)[1]) if arm.startswith("lookahead:") else 0)
+        if arm.startswith("lookahead:"):
+            cfg.seed.lookahead_frames = int(arm.split(":", 1)[1])
+        elif arm == "default":
+            pass                                  # whatever the config ships
+        else:
+            cfg.seed.lookahead_frames = 0
         results[arm] = run_arm(frames, cfg, arm)
         results[arm]["lookahead_frames"] = cfg.seed.lookahead_frames
 

@@ -135,7 +135,17 @@ class SeedConfig:
     #   - only move when the best frame beats frame 0 by `lookahead_min_gain`.
     # A genuinely half-occluded subject (behind a desk) is equally occluded in
     # all of them, so there is no gain and nothing moves.  0 disables it.
-    lookahead_frames: int = 0
+    # Default 4, turned on 8 Sep after the sweep below.  Across the whole
+    # delivery -- 19 clips, 79 shots -- it fires on three, and with the cast
+    # guard on two: bilibili shot 11, where it is a large repair (alpha bottom
+    # 587 -> 866 on the shot's first frame and every one of its sixteen frames
+    # gaining 273-353 rows), and butter shot 8, which moves the matte less than
+    # re-running the same code does.  Measured on full-length butter, both arms:
+    # clip alpha mean 0.27846 -> 0.27847, against a run-to-run noise floor of
+    # 0.00089 per frame taken from the seven shots that do not move at all.
+    # Set to 0 to restore the pre-8-Sep behaviour exactly; the renders in the
+    # delivery package predate this and were made with it off.
+    lookahead_frames: int = 4
     lookahead_min_tail: float = 0.15
     lookahead_min_gain: float = 0.10
     # Never move the seed to a frame that holds FEWER people than frame 0.
