@@ -1,0 +1,33 @@
+[shots] WARNING: 4 detected cut(s) at [968, 1104, 1183, 1300] suppressed by min_shot_len=12. The shot boundary is real; the seed will be propagated across it. Do not treat this clip as a single shot.
+[sam2matting] seeding 1 object(s) (auto-split)
+[reid] DINOv3 unavailable (OSError); falling back to the classical descriptor. Re-entry matching will be less reliable.
+[sam2matting] seeding 1 object(s) (auto-split)
+[reid] DINOv3 unavailable (OSError); falling back to the classical descriptor. Re-entry matching will be less reliable.
+[sam2matting] seeding 1 object(s) (auto-split)
+[reid] DINOv3 unavailable (OSError); falling back to the classical descriptor. Re-entry matching will be less reliable.
+[sam2matting] seeding 1 object(s) (auto-split)
+[reid] DINOv3 unavailable (OSError); falling back to the classical descriptor. Re-entry matching will be less reliable.
+[sam2matting] seeding 1 object(s) (auto-split)
+[reid] DINOv3 unavailable (OSError); falling back to the classical descriptor. Re-entry matching will be less reliable.
+[sam2matting] seeding 1 object(s) (auto-split)
+[reid] DINOv3 unavailable (OSError); falling back to the classical descriptor. Re-entry matching will be less reliable.
+[sam2matting] seeding 1 object(s) (auto-split)
+[reid] DINOv3 unavailable (OSError); falling back to the classical descriptor. Re-entry matching will be less reliable.
+[sam2matting] seeding 1 object(s) (auto-split)
+[reid] DINOv3 unavailable (OSError); falling back to the classical descriptor. Re-entry matching will be less reliable.
+[sam2matting] seeding 1 object(s) (auto-split)
+[reid] DINOv3 unavailable (OSError); falling back to the classical descriptor. Re-entry matching will be less reliable.
+[sam2matting] seeding 1 object(s) (auto-split)
+[reid] DINOv3 unavailable (OSError); falling back to the classical descriptor. Re-entry matching will be less reliable.
+[sam2matting] seeding 1 object(s) (auto-split)
+[sam2matting] seeding 1 object(s) (auto-split)
+[reid] DINOv3 unavailable (OSError); falling back to the classical descriptor. Re-entry matching will be less reliable.
+[sam2matting] seeding 1 object(s) (auto-split)
+[reid] DINOv3 unavailable (OSError); falling back to the classical descriptor. Re-entry matching will be less reliable.
+[sam2matting] seeding 1 object(s) (auto-split)
+[reid] DINOv3 unavailable (OSError); falling back to the classical descriptor. Re-entry matching will be less reliable.
+bilibili: 1372f @30.000 13 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=0 high_motion=332 3717.1s
+bilibili: 1372f @30.000 13 shot(s) engine=SAM2Matting bad_frames=0(diagnostic) reseeds=0 reentries=0 high_motion=332 3717.1s
+  green: /content/bili_out/bilibili_green_av.mp4
+  alpha: /content/bili_out/bilibili_alpha_av.mp4
+  transparent: /content/bili_out/bilibili_transparent.webm

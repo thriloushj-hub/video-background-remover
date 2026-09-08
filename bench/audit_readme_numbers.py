@@ -24,7 +24,10 @@ def check(label, claim, actual, tol=0):
 # --- frames / shots / gpu from the logs
 LOGS=[R+'/run_2026-09-05b/full3.log', R+'/run_2026-09-06_full1917/render1917.log',
       R+'/run_2026-09-06_four/run_alpha.log', R+'/run_2026-09-06_four/run_all.log',
-      R+'/run_2026-09-07_rest11/run_rest.log']
+      R+'/run_2026-09-07_rest11/run_rest.log',
+      # LAST on purpose: the 8 Sep bilibili re-render on the 5.7 look-ahead seed
+      # supersedes the 6 Sep row for that clip, and meta is keyed by clip name.
+      R+'/run_2026-09-08_bilibili/render_bilibili.log']
 meta={}
 for L in LOGS:
     if not os.path.exists(L): continue
@@ -35,13 +38,13 @@ tot_f=sum(v['frames'] for v in meta.values()); tot_s=sum(v['shots'] for v in met
 tot_h=sum(v['secs'] for v in meta.values())/3600.0
 check('total frames', 9640, tot_f)
 check('total shots', 56, tot_s)
-check('total GPU hours', 6.8, round(tot_h,1), 0.05)
+check('total GPU hours', 6.9, round(tot_h,1), 0.05)
 check('clips run', 18, len(meta))
 check('bad_frames anywhere', 0, sum(v['bad'] for v in meta.values()))
 check('clips with cuts', 9, sum(1 for v in meta.values() if v['shots']>1))
 
 # per-clip frames / shots / gpu as printed in the README table
-TABLE={'1917':(724,1,31),'butter':(382,9,17),'ipman':(501,7,20),'bilibili':(1372,13,57),
+TABLE={'1917':(724,1,31),'butter':(382,9,17),'ipman':(501,7,20),'bilibili':(1372,13,62),
  'es2':(879,1,40),'dlh':(661,1,28),'dance3':(619,1,28),'asianboss2':(354,1,15),
  'codylexi':(490,1,20),'dance':(363,2,18),'dance2':(607,1,25),'eddie':(143,2,4),
  'interview':(642,4,27),'jensen':(509,1,20),'leo':(208,1,7),'microsoft':(567,2,21),
@@ -61,7 +64,7 @@ for c in TABLE:
     if d: SOL[c]=d
 check('solos jsons present', 18, len(SOL))
 WHO={'1917':(72,0.0498,146,0.0326),'ipman':(21,0.0171,2,0.0142),'butter':(13,0.0358,0,0.0),
-     'dance':(11,0.0131,0,0.0),'bilibili':(6,0.0301,0,0.0)}
+     'dance':(11,0.0131,0,0.0),'bilibili':(0,0.0,0,0.0)}
 for c,(n1,m1,n2,m2) in WHO.items():
     d=SOL[c]
     check('%s v1-only frames'%c, n1, d['frames_with_v1_only'])
@@ -69,8 +72,8 @@ for c,(n1,m1,n2,m2) in WHO.items():
     check('%s v2-only frames'%c, n2, d['frames_with_v2_only'])
     check('%s v2-only max'%c, m2, round(max((p['v2_only'] for p in d['per_frame']),default=0.0),4), 0.0001)
 zero=[c for c in SOL if SOL[c]['frames_with_v1_only']==0 and SOL[c]['frames_with_v2_only']==0]
-check('clips clean both ways', 13, len(zero))
-check('frames in the clean clips', 6297, sum(SOL[c]['frames'] for c in zero))
+check('clips clean both ways', 14, len(zero))
+check('frames in the clean clips', 7669, sum(SOL[c]['frames'] for c in zero))
 
 # --- coverage flags
 COVN={'interview':(369,642),'microsoft':(113,567),'tryguys':(69,250),'shakira':(57,369),'dance':(41,363)}
@@ -93,10 +96,10 @@ for f in glob.glob(T+'/results/*_cov.json'):
 check('cov jsons for all 18', 18, len(allcov))
 check('total compared frames', 9463, sum(len(v) for v in allcov.values()))
 low={c:sum(1 for r in v if r[3]<0.80) for c,v in allcov.items()}
-check('frames below 0.80 IoU, all 18', 102, sum(low.values()))
+check('frames below 0.80 IoU, all 18', 86, sum(low.values()))
 check('  of which 1917', 86, low['1917'])
-check('  of which bilibili', 16, low['bilibili'])
-check('clips with zero such frames', 16, sum(1 for c in low if low[c]==0))
+check('  of which bilibili', 0, low['bilibili'])
+check('clips with zero such frames', 17, sum(1 for c in low if low[c]==0))
 # the 5.5 before/after on the blunt measure
 pre=load(R+'/run_2026-09-07_rest11/1917_pre55_cov.json')['rows']
 check('1917 pre-5.5 frames IoU<0.80', 103, sum(1 for r in pre if r[3]<0.80))
@@ -111,7 +114,7 @@ def struct(rows):
     return round(max(g)/m,1), round(sum(srt[:t])/sum(g),2)
 check('1917 max/median', 20.7, struct(allcov['1917'])[0], 0.15)
 check('1917 worst-tenth share', 0.42, struct(allcov['1917'])[1], 0.01)
-check('bilibili max/median', 17.1, struct(allcov['bilibili'])[0], 0.15)
+check('bilibili max/median', 13.7, struct(allcov['bilibili'])[0], 0.15)
 check('gap>1% flagged clips', 9, sum(1 for c,v in allcov.items() if sum(1 for r in v if r[4]>0.01) > 5))
 gb=[r[4] for r in b]; medb=st.median(gb)
 check('bilibili max/median gap', 17.1, round(max(gb)/medb,1), 0.15)
