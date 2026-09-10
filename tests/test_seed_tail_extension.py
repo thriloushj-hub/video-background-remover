@@ -298,32 +298,20 @@ def test_the_guard_defaults_on():
     assert Config().seed.lookahead_require_same_cast is True
 
 
-def test_the_lookahead_ranks_by_fill_not_by_how_far_down_it_reaches():
-    """bilibili's trailing boot, as a unit test.
+def test_fill_does_not_discriminate_on_bilibilis_shot_and_the_tail_does():
+    """The 10 Sep negative result, pinned so nobody re-tries it blind.
 
-    Frame 2 reaches the floor holding half the subject: tail 0.05, the best of
-    the four, and it is what the tail-ranked look-ahead chose.  Frame 3 stops a
-    little shorter but holds the whole subject.  Fill picks frame 3.
+    bilibili shot 11's first four frames, measured on an A100: fills 0.3325,
+    0.3759, 0.3908, 0.4085 against tails 0.3326, 0.0805, 0.0707, 0.0536.  Fill
+    ranks the SAME frame best and by only 0.076, which does not clear
+    lookahead_min_gain -- so ranking by fill stops the shot moving at all.  A
+    missing boot is a small share of a standing person's box.
     """
     from vbgr.seed import pick_seed_frame
-    spec = [(0.40, 1.00),      # frame 0: broken, the trigger
-            (0.20, 0.95),
-            (0.05, 0.50),      # reaches the floor, half the subject
-            (0.12, 1.00)]      # the one we want
+    spec = [(0.3326, 0.82), (0.0805, 0.93), (0.0707, 0.96), (0.0536, 1.00)]
     idx, notes = pick_seed_frame(_frames(4), _Det(), _SplitSeeder(spec),
                                  _Cfg(), _select)
-    assert idx == 3, notes
-    assert any("fills" in n for n in notes), notes
-
-
-def test_a_candidate_may_not_be_worse_on_tail_than_frame_zero():
-    """Fill must not buy a mask that stops shorter than the one we started with."""
-    from vbgr.seed import pick_seed_frame
-    spec = [(0.20, 0.60),      # frame 0: broken, and narrow
-            (0.55, 1.00)]      # fills far more, but stops much shorter
-    idx, notes = pick_seed_frame(_frames(2), _Det(), _SplitSeeder(spec),
-                                 _Cfg(), _select)
-    assert idx == 0, notes
+    assert idx == 3, notes          # the tail still moves it, and must
 
 
 def test_seed_box_fill_clips_to_the_box():

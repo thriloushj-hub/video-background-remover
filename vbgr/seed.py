@@ -713,34 +713,36 @@ def pick_seed_frame(frames, detector, seeder, cfg, select_boxes):
                      f"{min_tail:.3f}; not scanning")
         return 0, notes
 
-    # 5.7b: rank by how much of the box the mask FILLS, not by how far down it
-    # reaches.  The tail decides WHETHER to look (a mask that stops short of its
-    # box is the signal that this frame is broken); fill decides WHERE to go,
-    # because a mask holding one of a subject's two feet reaches the floor and
-    # is perfect on tail.  A candidate is never allowed to be worse on tail than
-    # frame 0, so this can only add information, never trade it away.
-    best_i, best_t, best_f, best_kept = 0, t0, (f0 if f0 is not None else 0.0), kept0
+    # Ranked by TAIL.  5.7b tried ranking by box fill instead, on the theory
+    # that fill is what sees a mask holding one of a subject's two feet -- and
+    # the GPU said no.  On bilibili's shot 11 the four candidate frames fill
+    # 0.3325, 0.3759, 0.3908, 0.4085 of their box against tails of 0.3326,
+    # 0.0805, 0.0707, 0.0536: fill ranks the SAME frame best, by a margin of
+    # 0.076 that does not clear lookahead_min_gain, so the shot stopped moving
+    # at all and the boots came back worse than before.  A missing boot is a
+    # small share of a standing person's box; the tail is the sharper signal.
+    # `worst_seed_fill` stays because it is worth MEASURING -- the sweep records
+    # it beside the tail -- it is just not what to steer on.
+    best_i, best_t, best_kept = 0, t0, kept0
     for i in range(1, min(k, len(frames))):
         ti, fi, ki = score_at(i)
-        if ti is None or fi is None or ti > t0:
-            continue
-        if fi > best_f:
-            best_i, best_t, best_f, best_kept = i, ti, fi, ki
-    gain = best_f - (f0 if f0 is not None else 0.0)
+        if ti is not None and ti < best_t:
+            best_i, best_t, best_kept = i, ti, ki
+    gain = t0 - best_t
     # Repairing the mask is not worth losing a subject.  A later frame that
     # keeps fewer people than frame 0 is a different cast, not a better seed --
     # the mirror of the failure this exists to fix.
     if (best_i and getattr(cfg, "lookahead_require_same_cast", True)
             and len(best_kept or []) < len(kept0 or [])):
-        notes.append(f"look-ahead: frame {best_i} fills more of its box "
-                     f"({best_f:.3f} vs {(f0 or 0.0):.3f}) but holds "
+        notes.append(f"look-ahead: frame {best_i} is cleaner "
+                     f"({best_t:.3f} vs {t0:.3f}) but holds "
                      f"{len(best_kept or [])} of {len(kept0 or [])} subjects; "
                      f"staying at frame 0")
         return 0, notes
     if best_i and gain >= getattr(cfg, "lookahead_min_gain", 0.10):
-        notes.append(f"seeded from frame {best_i} of this shot: frame 0 fills "
-                     f"{(f0 or 0.0):.3f} of its box (tail {t0:.3f}), frame "
-                     f"{best_i} fills {best_f:.3f} (tail {best_t:.3f})")
+        notes.append(f"seeded from frame {best_i} of this shot: frame 0 mask "
+                     f"tail {t0:.3f} (fill {(f0 or 0.0):.3f}), frame {best_i} "
+                     f"tail {best_t:.3f}")
         return best_i, notes
     notes.append(f"frame 0 mask tail {t0:.3f}, fill {(f0 or 0.0):.3f}; "
                  f"no better frame in the first {k}")
