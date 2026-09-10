@@ -13,11 +13,11 @@ python -m vbgr.cli run -i clips/ -o results/
 
 ---
 
-## Where this stands — 7 September 2026
+## Where this stands — 10 September 2026
 
 **All eighteen delivery clips now run end to end at their full length**, not the
 72-frame windows everything was measured on until 5 Sep: **9,640 frames, 56
-shots, 6.8 GPU-hours, zero failures, zero bad frames, no subject lost on any
+shots, 6.9 GPU-hours, zero failures, zero bad frames, no subject lost on any
 clip.** It writes real per-pixel alpha, a transparent WebM that is actually
 transparent (round-tripped at alpha correlation 1.0000), a composite over a
 still or moving background, and carries source audio through with the matte
@@ -61,22 +61,29 @@ suite cannot separate the two previous attempts either**, which is why
 > MP4 agree). What is left is the matting engine's own alpha at the image
 > boundary.
 >
-> **The delivery is on hold until this is fixed and all eighteen are re-rendered.**
+> **Update, 10 September: the delivery is no longer on hold.** The
+> frame-boundary half of this is still open and is named as such in the drop;
+> the shot-start half is fixed (5.7, below) and `bilibili` is re-rendered.
 > Numbers below that were computed from the standalone-region measure describe
-> that measure, not the mattes.
+> that measure, not the mattes, and that caveat still stands everywhere it
+> appears.
 
 **Running at full length was worth it, and the reason is unflattering.** On the
-standalone-region measure thirteen of the eighteen clips came back at zero
-across 6,297 frames — see the correction above for what that measure cannot
+standalone-region measure **fourteen** of the eighteen clips come back at zero
+across **7,669** frames — see the correction above for what that measure cannot
 see. Full length also turned up **two defects that eighteen benchmark windows
 could not see**, both on the failure modes named in the original brief:
 
 - **1917** drops motion-blurred runners crossing close to camera. Half fixed and
   measured (worst frame 12.3% → 5.0%); the rest is diagnosed, not papered over.
   See `bench/results/run_2026-09-06_fix55/`.
-- **bilibili** drops a subject's boots for 16 frames after the cut at f1159.
-  **The earlier diagnosis here was wrong and is withdrawn** — see below. Not
-  fixed. See `bench/results/run_2026-09-07_rest11/`.
+- **bilibili** dropped a subject's boots for 16 frames after the cut at f1159.
+  **Fixed on 8 September and re-rendered at full length** — the shot is now
+  seeded from a later frame, the clip returns zero in both directions across all
+  1,372 frames, and no frame falls below 0.80 IoU against v1. **The trailing
+  boot still returns soft rather than solid on about ten of those frames**; that
+  residual is real, is visible in the drop's own comparison sheet, and is
+  described below. See `bench/results/run_2026-09-08_bilibili/`.
 
 > [!warning] The withdrawal above is itself withdrawn (8 September 2026)
 > On 7 September this section retracted the "mask stage / 298 px" diagnosis on
@@ -114,7 +121,22 @@ could not see**, both on the failure modes named in the original brief:
 >
 > So a shot seeded one or two frames later gets a mask 51–74 px short instead of
 > 298, and the bad frames sit clear of the good ones (0.33 against a worst-good
-> of 0.12). That is 5.7, the look-ahead seed, and it is the work in progress.
+> of 0.12). That is **5.7, the look-ahead seed**, and it shipped on 8 September:
+> `lookahead_frames` defaults to 4, guarded so it will never move to a frame
+> holding fewer subjects than the first. Across the whole delivery — 19 clips,
+> 79 shots — it changes the seed on two, and `bilibili` shot 11's alpha bottom
+> goes **587 → 872** at the cut with every frame of the shot gaining.
+>
+> **What it does not do is make that boot solid, and two attempts at the rest
+> failed.** Ranking candidate frames by how much of the box the mask fills picks
+> the same frame by a margin under the gate (`run_2026-09-10_fill/`).
+> Re-binarising the truncated mask at a lower cutoff adds a **rim around the
+> whole silhouette** while the boot's sole stays outside every threshold from
+> 0.50 down to 0.05 (`run_2026-09-10_maskfix/`) — so it is left off, because it
+> would coarsen every edge in the delivery for nothing. **The boot is not a
+> low-confidence region the mask head is unsure about; it is absent from the
+> instance at any threshold.** Getting it solid needs a different segmenter on
+> that box, which is a mechanism change and is not made.
 >
 > **Anything measured from a re-encoded frame in this repository is suspect and
 > is being re-derived from lossless decodes.** That includes the 56-shot-start
