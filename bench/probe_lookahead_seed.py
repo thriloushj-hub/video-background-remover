@@ -145,7 +145,7 @@ def main():
     ap.add_argument("--config", required=True,
                     help="pipeline config (json or yaml): engine, checkpoint, repo_dir")
     ap.add_argument("--arm", action="append", default=[],
-                    help="off | default | lookahead:<k>   (repeatable; compared "
+                    help="off | default | lookahead:<k> | maskfix:<cutoff>  (repeatable; compared "
                          "pairwise in order).  'default' leaves the config's own "
                          "lookahead_frames alone, so the arm is the SHIPPED path "
                          "rather than a flag -- which is the only arm that can "
@@ -164,6 +164,12 @@ def main():
         cfg = load_config(a.config)
         if arm.startswith("lookahead:"):
             cfg.seed.lookahead_frames = int(arm.split(":", 1)[1])
+        elif arm.startswith("maskfix:"):
+            # 5.9 on top of whatever the config ships: re-binarise a truncated
+            # instance mask at a lower cutoff.  Paired with `default` this is
+            # the single-variable A/B for it.
+            cfg.seed.maskrcnn_mask_recover = True
+            cfg.seed.maskrcnn_mask_recover_binarise = float(arm.split(":", 1)[1])
         elif arm == "default":
             pass                                  # whatever the config ships
         else:

@@ -180,6 +180,23 @@ class SeedConfig:
     # still skipped rather than filled with its rectangle.
     maskrcnn_recover: bool = True
     maskrcnn_recover_score_min: float = 0.35
+    # 5.9, the mask cutoff.  Mask R-CNN returns a soft probability map per
+    # instance; `maskrcnn_mask_binarise` is what turns it into a mask, and 0.5
+    # is torchvision's default.  On bilibili the DETECTION is right -- a box on
+    # the whole figure at 0.93 -- and the mask inside it stops at the ankle,
+    # because a dark boot on a dark floor scores under 0.5.  The shot then
+    # inherits a subject with one foot for all sixteen of its frames.
+    #
+    # `maskrcnn_mask_recover` re-binarises only the boxes whose mask stops
+    # short, once, at the lower cutoff, and keeps the result only if it reaches
+    # further AND does not spill outside the box.  Default OFF until a GPU pass
+    # says otherwise -- 5.7b was turned on from a plausible argument and had to
+    # be reverted, so this one waits for numbers.
+    maskrcnn_mask_binarise: float = 0.5
+    maskrcnn_mask_recover: bool = False
+    maskrcnn_mask_recover_binarise: float = 0.25
+    maskrcnn_mask_recover_min_tail: float = 0.05
+    maskrcnn_mask_recover_max_spill: float = 1.5
     mask_threshold: float = 0.0
     detect_threshold: float = 0.35
     concept_text: str = "person"

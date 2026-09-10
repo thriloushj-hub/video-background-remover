@@ -344,12 +344,27 @@ class MaskRCNNSeeder:
 
     def __init__(self, detector=None, score_min: float = 0.80,
                  match_iou: float = 0.30, device: str = "auto",
-                 recover: bool = True, recover_score_min: float = 0.35):
+                 recover: bool = True, recover_score_min: float = 0.35,
+                 mask_binarise: float = 0.5, mask_recover: bool = False,
+                 mask_recover_binarise: float = 0.25,
+                 mask_recover_min_tail: float = 0.05,
+                 mask_recover_max_spill: float = 1.5):
         self._det = detector
         self.score_min = score_min
         self.match_iou = match_iou
         self.recover = recover
         self.recover_score_min = recover_score_min
+        # 5.9.  Mask R-CNN returns a soft probability map per instance and this
+        # is the cutoff that turns it into a mask.  0.5 is the torchvision
+        # default and it is where bilibili's trailing boot goes: a dark boot on
+        # a dark floor scores under it and simply is not in the seed, so the
+        # shot inherits a subject with one foot.  `mask_recover` re-binarises
+        # THAT ONE BOX at a lower cutoff -- see `masks_from_boxes`.
+        self.mask_binarise = mask_binarise
+        self.mask_recover = mask_recover
+        self.mask_recover_binarise = mask_recover_binarise
+        self.mask_recover_min_tail = mask_recover_min_tail
+        self.mask_recover_max_spill = mask_recover_max_spill
         self._device = device
         self.backend = "maskrcnn"
         self.notes: List[str] = []
@@ -372,7 +387,7 @@ class MaskRCNNSeeder:
         self._torch = torch
         self._det = m
 
-    def _instances(self, frame_bgr: np.ndarray, score_min=None):
+    def _instances(self, frame_bgr: np.ndarray, score_min=None, mask_thr=None):
         """(masks, boxes) for people above ``score_min``, at frame resolution.
 
         A detector exposing ``instances(frame_bgr) -> (masks, boxes)`` is used
@@ -380,11 +395,14 @@ class MaskRCNNSeeder:
         where the real risk is -- can be tested without torch installed.
         """
         thr = self.score_min if score_min is None else score_min
+        mthr = self.mask_binarise if mask_thr is None else mask_thr
         if callable(getattr(self._det, "instances", None)):
-            try:
-                return self._det.instances(frame_bgr, thr)
-            except TypeError:
-                return self._det.instances(frame_bgr)
+            for args in ((frame_bgr, thr, mthr), (frame_bgr, thr), (frame_bgr,)):
+                try:
+                    return self._det.instances(*args)
+                except TypeError:
+                    continue
+            raise TypeError("detector.instances rejected every call shape")
         self._ensure()
         import torch
         rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
@@ -394,13 +412,13 @@ class MaskRCNNSeeder:
         with torch.no_grad():
             o = self._det([t])[0]
         sel = (o["labels"] == 1) & (o["scores"] > thr)
-        masks = o["masks"][sel, 0].detach().cpu().numpy() > 0.5
+        masks = o["masks"][sel, 0].detach().cpu().numpy() > mthr
         boxes = o["boxes"][sel].detach().cpu().numpy()
         return masks, boxes
 
-    def _match(self, frame_bgr, boxes, score_min):
+    def _match(self, frame_bgr, boxes, score_min, mask_thr=None):
         """Aligned list of masks for ``boxes``, None where nothing matched."""
-        inst_masks, inst_boxes = self._instances(frame_bgr, score_min)
+        inst_masks, inst_boxes = self._instances(frame_bgr, score_min, mask_thr)
         out: List[Optional[np.ndarray]] = []
         used = set()
         for b in boxes:
@@ -452,6 +470,56 @@ class MaskRCNNSeeder:
                     f"score>={self.recover_score_min} after the strict pass "
                     f"({self.score_min}) matched nothing -- 5.5, confirmed "
                     f"uncovered by the re-entry scan")
+        # 5.9: the box matched and the MASK is truncated.
+        #
+        # Different failure from 5.5 above, and the one that survived 5.7.  On
+        # bilibili the box is right -- Mask R-CNN puts it on the whole figure at
+        # 0.93 -- and the instance mask inside it stops at the ankle, because a
+        # dark boot on a dark floor scores under the 0.5 cutoff that turns the
+        # soft mask into a binary one.  The shot then inherits a subject with
+        # one foot for its whole length.  Ranking candidate frames differently
+        # cannot help: measured on the GPU, no frame in the window has a seed
+        # that holds both boots (run_2026-09-10_fill).
+        #
+        # So re-binarise THAT ONE BOX at a lower cutoff, once, and keep the
+        # result only if it reaches further AND does not spill outside the box.
+        # The spill guard is the whole safety argument: a lower cutoff on a
+        # low-contrast region is exactly when a mask can bleed into background,
+        # and this project has been burned by a mechanism that looked like a
+        # fix and was a leak.
+        if self.mask_recover and self.mask_recover_binarise < self.mask_binarise:
+            short = [k for k, m in enumerate(aligned)
+                     if m is not None
+                     and seed_tail_fraction(m, boxes[k]) > self.mask_recover_min_tail]
+            if short:
+                retry = self._match(frame_bgr, [boxes[k] for k in short], None,
+                                    self.mask_recover_binarise)
+                for k, m in zip(short, retry):
+                    if m is None:
+                        continue
+                    old_m = aligned[k]
+                    t_old = seed_tail_fraction(old_m, boxes[k])
+                    t_new = seed_tail_fraction(m, boxes[k])
+                    spill_old = _area_outside(old_m, boxes[k])
+                    spill_new = _area_outside(m, boxes[k])
+                    box_area = max(1.0, (float(boxes[k][2]) - float(boxes[k][0]))
+                                   * (float(boxes[k][3]) - float(boxes[k][1])))
+                    ok_spill = spill_new <= max(spill_old * self.mask_recover_max_spill,
+                                                0.02 * box_area)
+                    if t_new < t_old and ok_spill:
+                        aligned[k] = m
+                        self.notes.append(
+                            f"re-binarised box {tuple(int(x) for x in boxes[k])} at "
+                            f"{self.mask_recover_binarise} (from {self.mask_binarise}): "
+                            f"mask tail {t_old:.3f} -> {t_new:.3f}, spill "
+                            f"{spill_old / box_area:.3f} -> {spill_new / box_area:.3f} "
+                            f"of the box -- 5.9")
+                    else:
+                        self.notes.append(
+                            f"declined the lower cutoff on box "
+                            f"{tuple(int(x) for x in boxes[k])}: tail {t_old:.3f} -> "
+                            f"{t_new:.3f}, spill {spill_old / box_area:.3f} -> "
+                            f"{spill_new / box_area:.3f} of the box -- 5.9")
         for k, m in enumerate(aligned):
             if m is None:
                 self.notes.append(
@@ -480,7 +548,15 @@ def build_seeder(cfg=None):
             score_min=getattr(cfg, "maskrcnn_score_min", 0.80),
             match_iou=getattr(cfg, "maskrcnn_match_iou", 0.30),
             recover=getattr(cfg, "maskrcnn_recover", True),
-            recover_score_min=getattr(cfg, "maskrcnn_recover_score_min", 0.35))
+            recover_score_min=getattr(cfg, "maskrcnn_recover_score_min", 0.35),
+            mask_binarise=getattr(cfg, "maskrcnn_mask_binarise", 0.5),
+            mask_recover=getattr(cfg, "maskrcnn_mask_recover", False),
+            mask_recover_binarise=getattr(
+                cfg, "maskrcnn_mask_recover_binarise", 0.25),
+            mask_recover_min_tail=getattr(
+                cfg, "maskrcnn_mask_recover_min_tail", 0.05),
+            mask_recover_max_spill=getattr(
+                cfg, "maskrcnn_mask_recover_max_spill", 1.5))
     if backend == "sam3":
         return SAM3Seeder(mask_threshold=cfg.mask_threshold,
                           detect_threshold=cfg.detect_threshold,
@@ -522,6 +598,27 @@ def seed_tail_fraction(mask: np.ndarray, box: Box) -> float:
     bottom = max(0.0, (y1 - (float(ys.max()) + 1.0))) / bh
     top = max(0.0, (float(ys.min()) - y0)) / bh
     return float(max(bottom, top))
+
+
+def _area_outside(mask: np.ndarray, box: Box) -> float:
+    """Pixels of ``mask`` that fall OUTSIDE ``box``.
+
+    5.9's safety guard.  A lower mask cutoff is most tempting exactly where the
+    subject is low-contrast, which is also where a mask can bleed into the
+    background instead of recovering a boot.  Growth outside the box is what
+    tells those two apart.
+    """
+    if mask is None:
+        return 0.0
+    m = np.asarray(mask) > 0
+    total = float(m.sum())
+    h, w = m.shape[:2]
+    x0, y0, x1, y1 = (int(v) for v in box)
+    x0, y0 = max(0, x0), max(0, y0)
+    x1, y1 = min(w, x1), min(h, y1)
+    if x1 <= x0 or y1 <= y0:
+        return total
+    return total - float(m[y0:y1, x0:x1].sum())
 
 
 def seed_box_fill(mask: np.ndarray, box: Box) -> float:
