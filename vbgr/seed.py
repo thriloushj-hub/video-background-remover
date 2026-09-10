@@ -524,6 +524,58 @@ def seed_tail_fraction(mask: np.ndarray, box: Box) -> float:
     return float(max(bottom, top))
 
 
+def seed_box_fill(mask: np.ndarray, box: Box) -> float:
+    """Fraction of a detection box's AREA the instance mask covers.
+
+    5.7b.  `seed_tail_fraction` above measures how far DOWN a mask reaches and
+    nothing else, and that is one-dimensional in a way that cost us the thing
+    5.7 was written to fix.  On `bilibili` the shot at f1159 has a subject with
+    two feet.  At f1162 the mask has the leading boot and not the trailing one:
+    it reaches the floor, so its tail is 0.054 -- the best of the shot's first
+    four frames -- and the look-ahead seeded from it.  The trailing boot then
+    came back at about 0.4 alpha for the rest of the shot, with the boot's own
+    creases visible inside the grey, which is what a matting model does with a
+    region it was never told is foreground.
+
+    Area is what sees a missing second foot, and the objection recorded in
+    `seed_tail_fraction` does not apply here.  That objection is 3.3a's, and it
+    is about an ABSOLUTE gate: fill is a function of pose, so no fixed
+    threshold separates a crouching subject from a broken mask.  The look-ahead
+    never uses a fixed threshold -- it compares the same subject a few frames
+    apart, where pose and framing are nearly constant and the only thing
+    varying is whether the mask head succeeded.  That is the same argument 5.7
+    already makes for the tail; the tail was simply the wrong quantity.
+
+    Clipped to the box, so a mask that spills outside it cannot score above 1.
+    """
+    if mask is None:
+        return 0.0
+    m = np.asarray(mask)
+    h, w = m.shape[:2]
+    x0, y0, x1, y1 = (int(v) for v in box)
+    x0, y0 = max(0, x0), max(0, y0)
+    x1, y1 = min(w, x1), min(h, y1)
+    if x1 <= x0 or y1 <= y0:
+        return 0.0
+    inside = m[y0:y1, x0:x1] > 0
+    return float(inside.sum()) / float((x1 - x0) * (y1 - y0))
+
+
+def worst_seed_fill(seeder, frame_bgr: np.ndarray, boxes: Sequence[Box]):
+    """The WORST `seed_box_fill` over the boxes kept for this frame.
+
+    Worst rather than mean for the same reason the tail is: one subject seeded
+    badly is one subject missing for the whole shot, and averaging hides it.
+    ``None`` when the seeder cannot answer -- see `worst_seed_tail`.
+    """
+    if not boxes:
+        return 1.0
+    if not seeder_can_measure_tails(seeder):
+        return None
+    aligned = seeder._match(frame_bgr, list(boxes), None)
+    return min(seed_box_fill(m, b) for m, b in zip(aligned, boxes))
+
+
 def seeder_can_measure_tails(seeder) -> bool:
     """Can this seeder answer "what mask is inside this box"?
 
@@ -637,15 +689,18 @@ def pick_seed_frame(frames, detector, seeder, cfg, select_boxes):
         return 0, notes
     H, W = frames[0].shape[:2]
 
-    def tail_at(i):
+    def score_at(i):
+        """(tail, fill, kept) for one candidate frame."""
         people, props = detector.detect(frames[i])
         kept, _ = select_boxes(people, W, H)
         if not kept:
-            return None, None
-        return worst_seed_tail(seeder, frames[i], [d.box for d in kept]), kept
+            return None, None, None
+        boxes = [d.box for d in kept]
+        return (worst_seed_tail(seeder, frames[i], boxes),
+                worst_seed_fill(seeder, frames[i], boxes), kept)
 
     min_tail = getattr(cfg, "lookahead_min_tail", 0.15)
-    t0, kept0 = tail_at(0)
+    t0, f0, kept0 = score_at(0)
     # Say so when the scan declines.  A look-ahead arm that changes nothing has
     # two completely different explanations -- the scan never ran, or it ran and
     # found frame 0 healthy -- and a silent return makes them indistinguishable
@@ -658,27 +713,37 @@ def pick_seed_frame(frames, detector, seeder, cfg, select_boxes):
                      f"{min_tail:.3f}; not scanning")
         return 0, notes
 
-    best_i, best_t, best_kept = 0, t0, kept0
+    # 5.7b: rank by how much of the box the mask FILLS, not by how far down it
+    # reaches.  The tail decides WHETHER to look (a mask that stops short of its
+    # box is the signal that this frame is broken); fill decides WHERE to go,
+    # because a mask holding one of a subject's two feet reaches the floor and
+    # is perfect on tail.  A candidate is never allowed to be worse on tail than
+    # frame 0, so this can only add information, never trade it away.
+    best_i, best_t, best_f, best_kept = 0, t0, (f0 if f0 is not None else 0.0), kept0
     for i in range(1, min(k, len(frames))):
-        ti, ki = tail_at(i)
-        if ti is not None and ti < best_t:
-            best_i, best_t, best_kept = i, ti, ki
-    gain = t0 - best_t
+        ti, fi, ki = score_at(i)
+        if ti is None or fi is None or ti > t0:
+            continue
+        if fi > best_f:
+            best_i, best_t, best_f, best_kept = i, ti, fi, ki
+    gain = best_f - (f0 if f0 is not None else 0.0)
     # Repairing the mask is not worth losing a subject.  A later frame that
     # keeps fewer people than frame 0 is a different cast, not a better seed --
     # the mirror of the failure this exists to fix.
     if (best_i and getattr(cfg, "lookahead_require_same_cast", True)
             and len(best_kept or []) < len(kept0 or [])):
-        notes.append(f"look-ahead: frame {best_i} is cleaner "
-                     f"({best_t:.3f} vs {t0:.3f}) but holds "
+        notes.append(f"look-ahead: frame {best_i} fills more of its box "
+                     f"({best_f:.3f} vs {(f0 or 0.0):.3f}) but holds "
                      f"{len(best_kept or [])} of {len(kept0 or [])} subjects; "
                      f"staying at frame 0")
         return 0, notes
     if best_i and gain >= getattr(cfg, "lookahead_min_gain", 0.10):
-        notes.append(f"seeded from frame {best_i} of this shot: frame 0 mask "
-                     f"tail {t0:.3f}, frame {best_i} {best_t:.3f}")
+        notes.append(f"seeded from frame {best_i} of this shot: frame 0 fills "
+                     f"{(f0 or 0.0):.3f} of its box (tail {t0:.3f}), frame "
+                     f"{best_i} fills {best_f:.3f} (tail {best_t:.3f})")
         return best_i, notes
-    notes.append(f"frame 0 mask tail {t0:.3f}; no better frame in the first {k}")
+    notes.append(f"frame 0 mask tail {t0:.3f}, fill {(f0 or 0.0):.3f}; "
+                 f"no better frame in the first {k}")
     return 0, notes
 
 

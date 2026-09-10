@@ -54,7 +54,8 @@ from vbgr import shots, video_io                            # noqa: E402
 from vbgr.config import Config                              # noqa: E402
 from vbgr.detect import select_person_boxes                 # noqa: E402
 from vbgr.pipeline import Pipeline                          # noqa: E402
-from vbgr.seed import pick_seed_frame, worst_seed_tail      # noqa: E402
+from vbgr.seed import (pick_seed_frame, worst_seed_fill,     # noqa: E402
+                       worst_seed_tail)
 
 
 def iou(a, b):
@@ -121,13 +122,14 @@ def main():
         clip_rows = []
         for si, (s, e) in enumerate(ranges, 1):
             shot = frames[s:e]
-            tails, kept_n, boxes_at = [], [], {}
+            tails, fills, kept_n, boxes_at = [], [], [], {}
             for i in range(min(a.k, len(shot))):
                 people, _ = pipe.detector.detect(shot[i])
                 kept, _ = sel(people, W, H)
                 kept_n.append(len(kept))
                 if not kept:
                     tails.append(None)
+                    fills.append(None)
                     boxes_at[i] = []
                     continue
                 bx = [list(map(int, d.box)) for d in kept]
@@ -135,17 +137,24 @@ def main():
                 t = worst_seed_tail(seeder=pipe.seeder, frame_bgr=shot[i],
                                     boxes=[d.box for d in kept])
                 tails.append(None if t is None else round(float(t), 4))
+                # 5.7b: fill is what the look-ahead now ranks by, and it is the
+                # number that shows a mask holding one of a subject's two feet.
+                f = worst_seed_fill(seeder=pipe.seeder, frame_bgr=shot[i],
+                                    boxes=[d.box for d in kept])
+                fills.append(None if f is None else round(float(f), 4))
             idx, notes = pick_seed_frame(shot, pipe.detector, pipe.seeder, cfg.seed, sel)
             lost = gained = 0
             if idx:
                 lost, gained = cast_delta(boxes_at.get(0, []), boxes_at.get(idx, []))
-            clip_rows.append(dict(shot=si, a=s, b=e, tails=tails, kept=kept_n,
+            clip_rows.append(dict(shot=si, a=s, b=e, tails=tails, fills=fills,
+                                  kept=kept_n,
                                   seed_frame=idx, notes=notes,
                                   cast_lost=lost, cast_gained=gained))
             flag = "MOVED" if idx else "stay "
             extra = f"  cast lost {lost} gained {gained}" if idx else ""
             print(f"  {name} shot{si:>2} [{s}:{e}] {flag} -> frame {idx}  "
-                  f"tails {tails}  kept {kept_n}{extra}", flush=True)
+                  f"tails {tails}  fills {fills}  kept {kept_n}{extra}",
+                  flush=True)
         results[name] = dict(n_frames=len(frames), starts=starts, shots=clip_rows)
         print(f"{name}: {len(frames)}f, {len(ranges)} shot(s), "
               f"{time.time()-t0:.1f}s", flush=True)

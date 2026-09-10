@@ -104,17 +104,52 @@ class _Det:
 
 
 class _TailSeeder:
-    """Seeder stub whose mask quality is scripted per frame index."""
+    """Seeder stub whose mask quality is scripted per frame index.
+
+    One mask per box, filling that box from its top down to ``1 - tail`` of its
+    height -- so tail is the scripted number and fill is ``1 - tail``.  The two
+    agree here on purpose: these cases are about the look-ahead moving or not,
+    not about the two measures disagreeing.  `_SplitSeeder` below is the case
+    where they disagree, which is the one that cost us bilibili's trailing boot.
+    """
     def __init__(self, tails):
         self.tails = tails
 
     def _match(self, frame, boxes, score_min):
         i = int(frame[0, 0, 0])                 # frame index smuggled in pixel 0
         t = self.tails[i]
-        m = np.zeros((300, 300), np.uint8)
-        y1 = int(260 - t * 220)
-        m[40:y1, 100:180] = 1
-        return [m]
+        out = []
+        for b in boxes:
+            x0, y0, x1, y1 = (int(v) for v in b)
+            m = np.zeros((300, 300), np.uint8)
+            bh = max(y1 - y0, 1)
+            m[y0:max(y0, int(y1 - t * bh)), x0:x1] = 1
+            out.append(m)
+        return out
+
+
+class _SplitSeeder:
+    """bilibili's shape: a mask that REACHES the floor holding half the subject.
+
+    Per frame, ``(tail, width_fraction)``.  A frame can have a perfect tail --
+    the mask reaches the bottom of the box -- while covering only half the box's
+    width, which is what "the leading boot and not the trailing one" looks like
+    to a metric.  Ranking by tail picks that frame; ranking by fill does not.
+    """
+    def __init__(self, spec):
+        self.spec = spec
+
+    def _match(self, frame, boxes, score_min):
+        i = int(frame[0, 0, 0])
+        t, wfrac = self.spec[i]
+        out = []
+        for b in boxes:
+            x0, y0, x1, y1 = (int(v) for v in b)
+            m = np.zeros((300, 300), np.uint8)
+            bh, bw = max(y1 - y0, 1), max(x1 - x0, 1)
+            m[y0:max(y0, int(y1 - t * bh)), x0:x0 + max(1, int(bw * wfrac))] = 1
+            out.append(m)
+        return out
 
 
 def _frames(n):
@@ -261,3 +296,40 @@ def test_the_cast_guard_leaves_a_steady_cast_alone():
 def test_the_guard_defaults_on():
     from vbgr.config import Config
     assert Config().seed.lookahead_require_same_cast is True
+
+
+def test_the_lookahead_ranks_by_fill_not_by_how_far_down_it_reaches():
+    """bilibili's trailing boot, as a unit test.
+
+    Frame 2 reaches the floor holding half the subject: tail 0.05, the best of
+    the four, and it is what the tail-ranked look-ahead chose.  Frame 3 stops a
+    little shorter but holds the whole subject.  Fill picks frame 3.
+    """
+    from vbgr.seed import pick_seed_frame
+    spec = [(0.40, 1.00),      # frame 0: broken, the trigger
+            (0.20, 0.95),
+            (0.05, 0.50),      # reaches the floor, half the subject
+            (0.12, 1.00)]      # the one we want
+    idx, notes = pick_seed_frame(_frames(4), _Det(), _SplitSeeder(spec),
+                                 _Cfg(), _select)
+    assert idx == 3, notes
+    assert any("fills" in n for n in notes), notes
+
+
+def test_a_candidate_may_not_be_worse_on_tail_than_frame_zero():
+    """Fill must not buy a mask that stops shorter than the one we started with."""
+    from vbgr.seed import pick_seed_frame
+    spec = [(0.20, 0.60),      # frame 0: broken, and narrow
+            (0.55, 1.00)]      # fills far more, but stops much shorter
+    idx, notes = pick_seed_frame(_frames(2), _Det(), _SplitSeeder(spec),
+                                 _Cfg(), _select)
+    assert idx == 0, notes
+
+
+def test_seed_box_fill_clips_to_the_box():
+    from vbgr.seed import seed_box_fill
+    m = np.zeros((300, 300), np.uint8)
+    m[0:300, 0:300] = 1
+    assert seed_box_fill(m, (10, 40, 60, 260)) == 1.0
+    assert seed_box_fill(np.zeros((300, 300), np.uint8), (10, 40, 60, 260)) == 0.0
+    assert seed_box_fill(None, (10, 40, 60, 260)) == 0.0
