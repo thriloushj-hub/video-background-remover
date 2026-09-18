@@ -348,7 +348,8 @@ class MaskRCNNSeeder:
                  mask_binarise: float = 0.5, mask_recover: bool = False,
                  mask_recover_binarise: float = 0.25,
                  mask_recover_min_tail: float = 0.05,
-                 mask_recover_max_spill: float = 1.5):
+                 mask_recover_max_spill: float = 1.5,
+                 edge_pad: int = 0, edge_pad_band: bool = False):
         self._det = detector
         self.score_min = score_min
         self.match_iou = match_iou
@@ -365,6 +366,42 @@ class MaskRCNNSeeder:
         self.mask_recover_binarise = mask_recover_binarise
         self.mask_recover_min_tail = mask_recover_min_tail
         self.mask_recover_max_spill = mask_recover_max_spill
+        # 5.10, the frame edge.  torchvision's `expand_masks(mask, padding=1)`
+        # zero-pads Mask R-CNN's 28x28 ROI mask with a one-cell border and
+        # `paste_mask_in_image` bilinearly resizes that to the box, so every
+        # box edge carries a ramp ~1 mask cell = box_dim/28 deep.  Everywhere
+        # except the frame edge that ramp falls in background and is harmless.
+        # At the frame edge the person fills the box to the border, so it eats
+        # real foreground -- and the boxes are additionally 2-11 px short of
+        # the edge.  Measured on the 27 Aug seeds, the seed mask is absent at
+        # the bottom row on ALL FIFTEEN clips (1.00, no exceptions), stopping
+        # 11-19 px short, and the alpha then stops 1.5-2.5x further short.
+        #
+        # `edge_pad` replicate-pads the frame before detection and crops the
+        # masks back afterwards, so the ramp lands in the pad and is discarded.
+        # This is NOT the rejected "extend the mask to the detector box"
+        # heuristic (5.6): nothing is filled in, the detector simply gets to
+        # see past the border, and a person whose box reaches the frame edge
+        # provably continues past it -- there is no floor or shadow out there
+        # to swallow.
+        self.edge_pad = max(0, int(edge_pad))
+        # 5.10b, 17 Sep.  The GPU A/B on the FINAL alpha showed the full pad
+        # fixing the bottom edge and BREAKING side edges: on tryguys the
+        # replicated pad smears the jacket into streaks, Mask R-CNN reads them
+        # as not-person, and the shoulder at the right edge retreats 6 -> 33 px
+        # (worse on 67 of 72 frames); on microsoft the left edge's seed drops
+        # 0.96 -> 0.46.  The pad also moves interior pixels it has no business
+        # touching (ipman's unexplained churn, a lost blurred fist on f6).
+        #
+        # `edge_pad_band` keeps the pad for the one thing it is for.  Both
+        # passes run; per box, the shipped (unpadded) mask is kept everywhere
+        # except a band `edge_pad` px wide along the frame border, where the
+        # two are OR-ed.  So by construction: the interior is bit-identical to
+        # the shipped seed, no edge can get worse than shipped, and the cast is
+        # the shipped cast (a box the unpadded pass did not match stays
+        # unmatched).  Seed-level screen, 7 clips x 3 frames x 4 edges: never
+        # worse on 50 of 50 edge cases, interior flip exactly 0.
+        self.edge_pad_band = bool(edge_pad_band)
         self._device = device
         self.backend = "maskrcnn"
         self.notes: List[str] = []
@@ -388,6 +425,38 @@ class MaskRCNNSeeder:
         self._det = m
 
     def _instances(self, frame_bgr: np.ndarray, score_min=None, mask_thr=None):
+        """(masks, boxes) at frame resolution, with the 5.10 edge pad applied.
+
+        ``edge_pad`` wraps BOTH backends -- the real detector and the
+        ``instances`` test hook -- so what the tests exercise is what ships.
+        That is HANDOFF section 7, entry eighteen: when two code paths do the
+        same job and only one is measured, a fix landing in the measured one is
+        indistinguishable from a fix landing in both.
+        """
+        p = self.edge_pad
+        if p <= 0:
+            return self._instances_raw(frame_bgr, score_min, mask_thr)
+        H, W = frame_bgr.shape[:2]
+        padded = cv2.copyMakeBorder(frame_bgr, p, p, p, p, cv2.BORDER_REPLICATE)
+        masks, boxes = self._instances_raw(padded, score_min, mask_thr)
+        masks = np.asarray(masks)
+        boxes = np.asarray(boxes, dtype=float).reshape(-1, 4)
+        if len(masks) == 0:
+            return masks, boxes
+        masks = masks[:, p:p + H, p:p + W]
+        boxes = boxes - p
+        boxes[:, 0::2] = np.clip(boxes[:, 0::2], 0, W - 1)
+        boxes[:, 1::2] = np.clip(boxes[:, 1::2], 0, H - 1)
+        # An instance that lived entirely in the pad is not a person in this
+        # frame.  Drop it rather than hand the matcher an empty mask.
+        keep = [i for i in range(len(masks)) if masks[i].any()]
+        if len(keep) != len(masks):
+            self.notes.append(
+                f"edge_pad {p}: dropped {len(masks) - len(keep)} instance(s) "
+                f"that fell entirely outside the frame after cropping")
+        return masks[keep], boxes[keep]
+
+    def _instances_raw(self, frame_bgr: np.ndarray, score_min=None, mask_thr=None):
         """(masks, boxes) for people above ``score_min``, at frame resolution.
 
         A detector exposing ``instances(frame_bgr) -> (masks, boxes)`` is used
@@ -418,6 +487,30 @@ class MaskRCNNSeeder:
 
     def _match(self, frame_bgr, boxes, score_min, mask_thr=None):
         """Aligned list of masks for ``boxes``, None where nothing matched."""
+        if self.edge_pad > 0 and self.edge_pad_band:
+            p = self.edge_pad
+            self.edge_pad = 0
+            try:
+                base = self._match_one(frame_bgr, boxes, score_min, mask_thr)
+            finally:
+                self.edge_pad = p
+            padded = self._match_one(frame_bgr, boxes, score_min, mask_thr)
+            H, W = frame_bgr.shape[:2]
+            band = np.zeros((H, W), bool)
+            band[:p] = band[-p:] = True
+            band[:, :p] = band[:, -p:] = True
+            out = []
+            for m0, m1 in zip(base, padded):
+                if m0 is None or m1 is None:
+                    out.append(m0)
+                    continue
+                m = m0.copy()
+                m[band] = np.maximum(m0, m1)[band]
+                out.append(m)
+            return out
+        return self._match_one(frame_bgr, boxes, score_min, mask_thr)
+
+    def _match_one(self, frame_bgr, boxes, score_min, mask_thr=None):
         inst_masks, inst_boxes = self._instances(frame_bgr, score_min, mask_thr)
         out: List[Optional[np.ndarray]] = []
         used = set()
@@ -556,7 +649,9 @@ def build_seeder(cfg=None):
             mask_recover_min_tail=getattr(
                 cfg, "maskrcnn_mask_recover_min_tail", 0.05),
             mask_recover_max_spill=getattr(
-                cfg, "maskrcnn_mask_recover_max_spill", 1.5))
+                cfg, "maskrcnn_mask_recover_max_spill", 1.5),
+            edge_pad=getattr(cfg, "maskrcnn_edge_pad", 0),
+            edge_pad_band=getattr(cfg, "maskrcnn_edge_pad_band", False))
     if backend == "sam3":
         return SAM3Seeder(mask_threshold=cfg.mask_threshold,
                           detect_threshold=cfg.detect_threshold,

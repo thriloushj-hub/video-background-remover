@@ -1,0 +1,49 @@
+
+########## interview_w262_334.mp4 ##########
+
+-- frame 0: pad0 5 instances, pad64 8 after cropping
+   [0] score 0.999  box (891,-6,1949,1138)  h=1144  bestIoU 0.90  matches pad0 touches ['T', 'R', 'B']
+   [1] score 0.997  box (170,269,935,1116)  h=846  bestIoU 0.90  matches pad0 touches ['B']
+   [2] score 0.993  box (999,534,1091,757)  h=223  bestIoU 0.91  matches pad0 touches -
+   [3] score 0.895  box (1268,538,1305,609)  h=71  bestIoU 0.00  NEW          touches -
+   [4] score 0.884  box (1191,559,1281,665)  h=106  bestIoU 0.01  NEW          touches -
+   [5] score 0.871  box (1296,535,1326,614)  h=79  bestIoU 0.00  NEW          touches -
+   [6] score 0.837  box (898,539,957,649)  h=109  bestIoU 0.01  NEW          touches -
+   [7] score 0.829  box (981,538,1050,744)  h=206  bestIoU 0.48  partial      touches -
+
+-- frame 24: pad0 5 instances, pad64 7 after cropping
+   [0] score 1.000  box (915,-4,1955,1124)  h=1127  bestIoU 0.92  matches pad0 touches ['T', 'R', 'B']
+   [1] score 0.999  box (159,231,990,1121)  h=890  bestIoU 0.90  matches pad0 touches ['B']
+   [2] score 0.948  box (1192,560,1277,655)  h=95  bestIoU 0.95  matches pad0 touches -
+   [3] score 0.942  box (1023,545,1074,669)  h=125  bestIoU 0.95  matches pad0 touches -
+   [4] score 0.942  box (945,524,1015,680)  h=157  bestIoU 0.84  matches pad0 touches -
+   [5] score 0.860  box (505,296,949,1085)  h=790  bestIoU 0.51  matches pad0 touches ['B']
+   [6] score 0.845  box (1144,563,1175,656)  h=93  bestIoU 0.00  NEW          touches -
+
+-- frame 48: pad0 7 instances, pad64 8 after cropping
+   [0] score 0.999  box (906,-13,1948,1138)  h=1151  bestIoU 0.90  matches pad0 touches ['T', 'R', 'B']
+   [1] score 0.999  box (169,242,1029,1126)  h=884  bestIoU 0.83  matches pad0 touches ['B']
+   [2] score 0.951  box (519,269,947,1081)  h=812  bestIoU 0.54  matches pad0 touches ['B']
+   [3] score 0.933  box (733,536,793,675)  h=140  bestIoU 0.96  matches pad0 touches -
+   [4] score 0.929  box (1007,541,1057,664)  h=123  bestIoU 0.93  matches pad0 touches -
+   [5] score 0.878  box (1050,545,1095,667)  h=121  bestIoU 0.80  matches pad0 touches -
+   [6] score 0.847  box (1197,561,1278,650)  h=89  bestIoU 0.91  matches pad0 touches -
+   [7] score 0.836  box (1145,562,1175,658)  h=96  bestIoU 0.91  matches pad0 touches -
+
+########## 1917_w4_76.mp4 ##########
+
+-- frame 0: pad0 3 instances, pad64 2 after cropping
+   [0] score 0.998  box (1640,161,1876,672)  h=511  bestIoU 0.81  matches pad0 touches -
+   [1] score 0.998  box (363,-13,1794,868)  h=881  bestIoU 0.77  matches pad0 touches ['T', 'B']
+
+-- frame 24: pad0 3 instances, pad64 3 after cropping
+   [0] score 0.999  box (1559,171,1804,691)  h=520  bestIoU 0.89  matches pad0 touches -
+   [1] score 0.998  box (212,-14,1565,848)  h=862  bestIoU 0.85  matches pad0 touches ['T', 'B']
+   [2] score 0.867  box (1190,80,1289,263)  h=183  bestIoU 0.02  NEW          touches -
+
+-- frame 48: pad0 4 instances, pad64 5 after cropping
+   [0] score 1.000  box (1348,177,1530,672)  h=496  bestIoU 0.91  matches pad0 touches -
+   [1] score 0.997  box (1604,394,1900,768)  h=373  bestIoU 0.79  matches pad0 touches -
+   [2] score 0.993  box (128,-7,1221,836)  h=842  bestIoU 0.91  matches pad0 touches ['T', 'B']
+   [3] score 0.953  box (1683,547,1914,808)  h=261  bestIoU 0.69  matches pad0 touches ['B']
+   [4] score 0.839  box (897,313,1340,710)  h=397  bestIoU 0.14  partial      touches -

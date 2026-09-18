@@ -1,0 +1,51 @@
+{
+ "microsoft": {
+  "base": 2153051,
+  "add_edge": 55019,
+  "add_int": 10840,
+  "rem_edge": 18376,
+  "rem_int": 12735
+ },
+ "ipman": {
+  "base": 1142803,
+  "add_edge": 42054,
+  "add_int": 35784,
+  "rem_edge": 944,
+  "rem_int": 16696
+ },
+ "interview": {
+  "base": 2932296,
+  "add_edge": 100830,
+  "add_int": 49352,
+  "rem_edge": 1440,
+  "rem_int": 35041
+ },
+ "tryguys": {
+  "base": 3818056,
+  "add_edge": 75643,
+  "add_int": 25282,
+  "rem_edge": 35528,
+  "rem_int": 21143
+ },
+ "1917": {
+  "base": 1579615,
+  "add_edge": 72819,
+  "add_int": 76282,
+  "rem_edge": 12783,
+  "rem_int": 33730
+ },
+ "codylexi": {
+  "base": 2925270,
+  "add_edge": 61814,
+  "add_int": 24512,
+  "rem_edge": 1884,
+  "rem_int": 18188
+ },
+ "jensen": {
+  "base": 1542627,
+  "add_edge": 28041,
+  "add_int": 16073,
+  "rem_edge": 579,
+  "rem_int": 8910
+ }
+}

@@ -1,0 +1,32 @@
+clip       arm        edge a  absent  realLOST  realMERGE  churn%
+microsoft  pad0        0.173    1.00         0          0    0.00
+           sym         0.956    0.00         0          0    1.09
+           asym2       0.945    0.00         0          0    1.16
+
+ipman      pad0        0.047    1.00         0          0    0.00
+           sym         0.890    0.05         0          0    4.68
+           asym2       0.914    0.01         0          0    3.69
+
+interview  pad0        0.247    1.00         0          0    0.00
+           sym         0.838    0.02         0          0    2.89
+           asym2       0.819    0.03         0          0    2.79
+
+tryguys    pad0        0.328    1.00         0          0    0.00
+           sym         0.908    0.00         0          0    1.22
+           asym2       0.908    0.00         0          0    1.22
+
+1917       pad0        0.011    1.00         0          0    0.00
+           sym         0.797    0.06         0          0    7.25
+           asym2       0.850    0.01         0          0    5.84
+
+codylexi   pad0        0.251    1.00         0          0    0.00
+           sym         0.712    0.09         0          0    1.46
+           asym2       0.757    0.05         0          0    1.27
+
+jensen     pad0        0.152    1.00         0          0    0.00
+           sym         0.797    0.11         0          0    1.62
+           asym2       0.794    0.11         0          0    1.14
+
+SET TOTALS
+  sym     mean edge alpha 0.842  real LOST 0  real MERGED 0  mean churn 2.89%
+  asym2   mean edge alpha 0.855  real LOST 0  real MERGED 0  mean churn 2.45%
