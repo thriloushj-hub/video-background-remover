@@ -4,16 +4,16 @@ Why this exists
 ---------------
 On `bilibili` the shot starting at f1159 loses a subject's boots for sixteen
 frames, returning at f1175 -- which is exactly the next shot start.  The
-earlier diagnosis blamed the mask stage and is retracted: re-running the
-SHIPPED build_seed on CPU gives a seed reaching row 825 (68 px short of its
-box, not 298), and every CPU stage after it is clean --
-
-    seed 825 -> erode_dilate 831 -> guided_filter 831 -> shipped alpha 588
-
--- so the loss happens inside the engine, between a mask reaching 831 and an
-alpha reaching 588.  That earlier number came from an ad-hoc Colab cell that
-was never committed, which is why nothing could re-derive it.  Hence this file
-being in the repo.
+original diagnosis blamed the mask stage -- and it was RIGHT.  The "825"
+this docstring used to carry came from a CPU repro that decoded a JPEG it had
+written out of the clip; at q100 that re-encode moved the Mask R-CNN boundary
+by 229 px (8 Sep, HANDOFF s7 entry twenty-eight).  Decoded losslessly the seed
+reaches ~596-604, the engine returns 587 -- it follows faithfully -- and Job 2
+(18 Sep, run_2026-09-17_edgepad_gpu/JOB2_RESULT.md) measured the same across
+11 segments: median deficit +0.5 px at the seed frame, max +18.  There is no
+engine-side loss.  This probe remains useful as the global-bottom instrument
+for interior (non-frame-edge) reach, which the edge-anchored Job 2 probe
+cannot see.
 
 What it reports, per arm, for a clip segment cut to START on a shot boundary
 (so segment frame 0 is the frame the shipped run seeded that shot from):
