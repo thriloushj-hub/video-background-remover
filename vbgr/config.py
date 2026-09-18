@@ -197,6 +197,52 @@ class SeedConfig:
     maskrcnn_mask_recover_binarise: float = 0.25
     maskrcnn_mask_recover_min_tail: float = 0.05
     maskrcnn_mask_recover_max_spill: float = 1.5
+    # 5.10, the frame edge.  THE DEFECT: where a subject is cut by the edge of
+    # frame the matte stops short of it -- and it is truncation, not softness.
+    # On microsoft's bottom edge, of the 475 columns solidly foreground 80-100
+    # px up, 81.3% are BELOW alpha 0.05 at the bottom row and 16.4% are above
+    # 0.5.  "Mean alpha 0.52 in the bottom 8 rows" is a mean over a bimodal
+    # distribution and it made the defect read as a soft edge for a week.
+    #
+    # THE CAUSE, and it is not the matting model: torchvision's
+    # `expand_masks(mask, padding=1)` zero-pads Mask R-CNN's 28x28 ROI mask and
+    # `paste_mask_in_image` bilinearly resizes it to the box, so every box edge
+    # carries a ramp ~1 mask cell = box_dim/28 deep (measured on microsoft f0
+    # at all four edges of both instances: d=0 values 0.378 / 0.329 / 0.175 /
+    # 0.117, crossing 0.5 at 6-28 px, one cell 29-34 px).  Harmless everywhere
+    # except the frame edge, where the person fills the box to the border.  The
+    # boxes are additionally 2-11 px short of the edge.  Set-wide: the seed is
+    # absent at the bottom row on all fifteen clips.
+    #
+    # NOTE this retracts "the seed is ruled out, Mask R-CNN reaches the border,
+    # median 3 px short" -- that was measuring the BOX, not the MASK, the same
+    # distinction 5.6 drew on bilibili.  And it is 5.6/5.9's defect set-wide,
+    # so nothing in the mask-cutoff family can reach it.
+    #
+    # THE FIX: replicate-pad the frame before detection, crop the masks back.
+    # microsoft, 4 frames, CPU, pad 64: seed reach 17 px short -> 0, absent at
+    # the bottom row 1.00 -> 0.00, mean alpha at the edge 0.170 -> 0.957, edge
+    # coverage 0 px -> 919 px.  It RECOVERS rather than dilates and that is
+    # measured: edge width over width 90 px up saturates at 0.96 and stops
+    # (dilation climbs past 1), width 90 px up is constant at ~956 px, total
+    # area wobbles sub-1% non-monotonically, and the detection count is
+    # unchanged at every pad width so the cast never moves.
+    #
+    # DEFAULT OFF.  5.7b was turned on from a plausible argument and had to be
+    # reverted; this waits for a GPU pass that measures the FINAL ALPHA, since
+    # everything above is the seed and the engine still loses another 1.5-2.5x
+    # on top.  64 is where both reach and confidence plateau; 128 buys +0.016.
+    # FLIPPED ON 18 Sep 2026, Thriloush's call, after the GPU A/B (band arm):
+    # every edge equal or better on every frame of every tested clip, zero
+    # regions lost, cast unchanged. run_2026-09-17_edgepad_gpu/BAND_RESULT.md.
+    # The _to_send/ renders predate this -- set 0/False to reproduce them.
+    maskrcnn_edge_pad: int = 64
+    # 5.10b (17 Sep): the full pad fixed the bottom edge on the final alpha and
+    # broke tryguys' right edge (GPU, run_2026-09-17_edgepad_gpu).  With this on,
+    # the padded mask is only used inside an `maskrcnn_edge_pad`-wide band along
+    # the frame border, OR-ed with the shipped mask; the interior and the cast
+    # are the shipped ones.  GPU A/B passed 17 Sep; on by default since 18 Sep.
+    maskrcnn_edge_pad_band: bool = True
     mask_threshold: float = 0.0
     detect_threshold: float = 0.35
     concept_text: str = "person"
