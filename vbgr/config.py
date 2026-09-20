@@ -232,13 +232,23 @@ class SeedConfig:
     # reverted; this waits for a GPU pass that measures the FINAL ALPHA, since
     # everything above is the seed and the engine still loses another 1.5-2.5x
     # on top.  64 is where both reach and confidence plateau; 128 buys +0.016.
-    maskrcnn_edge_pad: int = 0   # GPU A/B pending -- see HANDOFF s5. 64 is the value under test.
+    # FLIPPED ON 18 Sep 2026, Thriloush's call, after the GPU A/B (band arm):
+    # every edge equal or better on every frame of every tested clip, zero
+    # regions lost, cast unchanged. run_2026-09-17_edgepad_gpu/BAND_RESULT.md.
+    # The _to_send/ renders predate this -- set 0/False to reproduce them.
+    # (20 Sep: this flip was briefly reverted by an edit made on a stale
+    # checkout; the default-pinning tests caught it before anything rendered.)
+    maskrcnn_edge_pad: int = 64
     # 5.10b (17 Sep): the full pad fixed the bottom edge on the final alpha and
     # broke tryguys' right edge (GPU, run_2026-09-17_edgepad_gpu).  With this on,
     # the padded mask is only used inside an `maskrcnn_edge_pad`-wide band along
     # the frame border, OR-ed with the shipped mask; the interior and the cast
     # are the shipped ones.  Off until its own GPU A/B.
-    maskrcnn_edge_pad_band: bool = False
+    # 5.10b (17 Sep): the padded mask is only used inside an
+    # `maskrcnn_edge_pad`-wide band along the frame border, OR-ed with the
+    # shipped mask; the interior and the cast are the shipped ones.
+    # GPU A/B passed 17 Sep; on by default since 18 Sep.
+    maskrcnn_edge_pad_band: bool = True
     mask_threshold: float = 0.0
     detect_threshold: float = 0.35
     concept_text: str = "person"
