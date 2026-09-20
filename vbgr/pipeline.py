@@ -675,7 +675,8 @@ class Pipeline:
     def _refine_sequence(self, frames, alphas, rep: ShotReport):
         cfg = self.cfg
         if not (cfg.motion.enabled or cfg.refine.band_refine or
-                cfg.refine.temporal_filter or cfg.refine.guided_filter):
+                cfg.refine.temporal_filter or cfg.refine.guided_filter or
+                cfg.refine.core_solidify):
             return alphas, rep
 
         stab = refine.TemporalStabilizer(
@@ -718,6 +719,12 @@ class Pipeline:
 
             if stab is not None:
                 a = stab.step(f, a)
+
+            if cfg.refine.core_solidify:
+                a = refine.core_solidify(
+                    a, cfg.refine.core_solidify_thresh,
+                    cfg.refine.core_solidify_radius_frac,
+                    cfg.refine.core_solidify_floor)
 
             out[i] = a
             prev = f

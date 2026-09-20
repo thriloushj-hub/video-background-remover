@@ -93,3 +93,4 @@ _admin/
 # Evidence stills delivered into chat; the ones that matter are copied into
 # _to_send/outputs/who_holds_what/ and into the vault.
 Claude outputs/
+compare_app/

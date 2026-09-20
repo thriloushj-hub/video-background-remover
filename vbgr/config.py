@@ -232,17 +232,13 @@ class SeedConfig:
     # reverted; this waits for a GPU pass that measures the FINAL ALPHA, since
     # everything above is the seed and the engine still loses another 1.5-2.5x
     # on top.  64 is where both reach and confidence plateau; 128 buys +0.016.
-    # FLIPPED ON 18 Sep 2026, Thriloush's call, after the GPU A/B (band arm):
-    # every edge equal or better on every frame of every tested clip, zero
-    # regions lost, cast unchanged. run_2026-09-17_edgepad_gpu/BAND_RESULT.md.
-    # The _to_send/ renders predate this -- set 0/False to reproduce them.
-    maskrcnn_edge_pad: int = 64
+    maskrcnn_edge_pad: int = 0   # GPU A/B pending -- see HANDOFF s5. 64 is the value under test.
     # 5.10b (17 Sep): the full pad fixed the bottom edge on the final alpha and
     # broke tryguys' right edge (GPU, run_2026-09-17_edgepad_gpu).  With this on,
     # the padded mask is only used inside an `maskrcnn_edge_pad`-wide band along
     # the frame border, OR-ed with the shipped mask; the interior and the cast
-    # are the shipped ones.  GPU A/B passed 17 Sep; on by default since 18 Sep.
-    maskrcnn_edge_pad_band: bool = True
+    # are the shipped ones.  Off until its own GPU A/B.
+    maskrcnn_edge_pad_band: bool = False
     mask_threshold: float = 0.0
     detect_threshold: float = 0.35
     concept_text: str = "person"
@@ -435,6 +431,16 @@ class RefineConfig:
     guided_filter: bool = True
     guided_radius: int = 4
     guided_eps: float = 1e-4
+    # Core solidification (20 Sep): force the subject's interior to alpha 1,
+    # leaving everything within `radius` of a true boundary untouched.
+    # Answers the full-length review finding that interiors fade to 0.3-0.7
+    # under fast motion and occlusion (butter -30% solid area on f281-283)
+    # while every IoU column stayed green.  OFF by default -- flipping it is
+    # Thriloush's call, and means re-rendering the delivery.
+    core_solidify: bool = False
+    core_solidify_thresh: float = 0.25
+    core_solidify_radius_frac: float = 0.00625   # x frame width; 12 px at 1920
+    core_solidify_floor: float = 0.05            # gap guard: never solidify near-zero alpha
 
 
 @dataclass

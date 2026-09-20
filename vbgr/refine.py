@@ -186,3 +186,52 @@ def remove_specks(alpha: np.ndarray, min_area: int = 48) -> np.ndarray:
         if stats[i, cv2.CC_STAT_AREA] < min_area:
             out[lab == i] = 0.0
     return out
+
+
+# --------------------------------------------------------------------------- #
+# Core solidification
+# --------------------------------------------------------------------------- #
+
+def core_solidify(alpha: np.ndarray, thresh: float = 0.25,
+                  radius_frac: float = 0.00625,
+                  floor: float = 0.05) -> np.ndarray:
+    """Force the subject's interior to full opacity, leaving true edges alone.
+
+    Thriloush's 20 Sep full-length review found interiors and limbs dropping
+    to alpha 0.3-0.7 during fast motion and occlusion (butter f281-283 lost
+    30% of its solid area against v1; the interview hand, the occluded dance3
+    dancer).  IoU at a 0.5 threshold is blind to a pixel falling from 1.0 to
+    0.6, which is why every column stayed green while the composites visibly
+    faded.
+
+    Construction, validated offline on the six clips he named (sweep in
+    bench/results/run_2026-09-18_rerender/core_sweep*.json):
+
+        hard = alpha > thresh
+        core = erode( close(hard, r), r )  &  (alpha > floor)
+        out[core] = 1.0
+
+    - close() first, so an interior region that dips BELOW `thresh` (the
+      faded areas sit at median 0.40, p10 0.14) is bridged before eroding;
+    - erode() by the same radius, so nothing within r of a true boundary is
+      touched -- hair and real motion-blur edges keep their fractional alpha;
+    - the `floor` guard keeps close() from webbing across true gaps (between
+      legs, between two subjects): a bridged background pixel has alpha ~0
+      and is excluded, a faded subject pixel does not.
+
+    Limitation, on purpose: a thin faded extremity (a gesturing hand) is
+    removed entirely by the erode and stays faded.  Interiors are what this
+    fixes; thin structures need the engine, not post-processing.
+
+    `radius_frac` is a fraction of frame width (0.00625 = 6 px at 960, the
+    sweep's unit; 12 px at 1920).
+    """
+    a = np.clip(alpha.astype(np.float32), 0.0, 1.0)
+    r = max(3, int(round(radius_frac * a.shape[1])))
+    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1))
+    hard = (a > thresh).astype(np.uint8)
+    closed = cv2.morphologyEx(hard, cv2.MORPH_CLOSE, k)
+    core = (cv2.erode(closed, k) > 0) & (a > floor)
+    out = a.copy()
+    out[core] = 1.0
+    return out
