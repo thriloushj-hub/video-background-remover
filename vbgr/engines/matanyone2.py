@@ -110,16 +110,41 @@ class MatAnyone2Engine(MattingEngine):
 
     # -- streaming API ------------------------------------------------------ #
 
+    def _ctx(self):
+        # 27 Sep: the repo's inference script runs under inference_mode +
+        # autocast.  Without inference_mode every step keeps autograd state
+        # and 1080p OOMs a 40 GB A100 during the static warmup.
+        import contextlib
+        self._ensure()
+        t = self._torch
+        stack = contextlib.ExitStack()
+        stack.enter_context(t.inference_mode())
+        # v1's notebook keeps MatAnyone 2 in float32 on purpose ("do NOT wrap in
+        # bfloat16 autocast, it degrades borderline pixels"); `half` is ignored
+        # here.  TF32 matmuls are the near-free speedup v1 uses instead.
+        if self.device == "cuda":
+            t.backends.cuda.matmul.allow_tf32 = True
+            t.backends.cudnn.allow_tf32 = True
+        return stack
+
     def start(self, frame_bgr: np.ndarray, seed_mask: np.ndarray,
               n_warmup: int = 10) -> np.ndarray:
+        with self._ctx():
+            return self._start(frame_bgr, seed_mask, n_warmup)
+
+    def _start(self, frame_bgr: np.ndarray, seed_mask: np.ndarray,
+               n_warmup: int = 10) -> np.ndarray:
         self._ensure()
         t = self._torch
         self.reset()
 
         img = self._img(frame_bgr)
         m = t.from_numpy(np.asarray(seed_mask, np.float32)).to(self.device)
-        if m.max() > 1.5:
-            m = m / 255.0
+        # InferenceCore.step() divides the seed by 255 ITSELF (the 15 Aug
+        # benchmark bug, [[First_Comparison_Results]]); v1 hands it 0..255.
+        # A 0..1 seed here becomes a 0.4% foreground probability: collapsed matte.
+        if m.max() <= 1.5:
+            m = m * 255.0
 
         prob = self._proc.step(img, m, objects=[1])
         prob = self._proc.step(img, first_frame_pred=True)
@@ -135,14 +160,22 @@ class MatAnyone2Engine(MattingEngine):
              commit_to_memory: bool = True,
              permanent: bool = False,
              reseed_mask: Optional[np.ndarray] = None) -> np.ndarray:
+        with self._ctx():
+            return self._step(frame_bgr, commit_to_memory=commit_to_memory,
+                              permanent=permanent, reseed_mask=reseed_mask)
+
+    def _step(self, frame_bgr: np.ndarray, *,
+              commit_to_memory: bool = True,
+              permanent: bool = False,
+              reseed_mask: Optional[np.ndarray] = None) -> np.ndarray:
         self._ensure()
         t = self._torch
         img = self._img(frame_bgr)
 
         if reseed_mask is not None:
             m = t.from_numpy(np.asarray(reseed_mask, np.float32)).to(self.device)
-            if m.max() > 1.5:
-                m = m / 255.0
+            if m.max() <= 1.5:
+                m = m * 255.0     # see start(): step() divides by 255 itself
             prob = self._proc.step(img, m, objects=[1])
             return to_alpha_2d(self._proc.output_prob_to_mask(prob))
 
