@@ -32,6 +32,24 @@ class IOConfig:
     save_frames: bool = False
     # Fail loudly rather than silently dropping frames (see docs/BUGS.md).
     strict_frame_count: bool = True
+    # 2 Oct 2026 -- output edge finish, applied to the alpha just before the
+    # composites are written (the alpha video gets it too, so every output
+    # agrees).  Thriloush's standing target (28 Sep): "dont do soft alpha,
+    # crisper edges".  v1's edge is MatAnyone 2's hard mask through an 8 px
+    # erode+dilate, which is what reads as "crisp" to him.
+    #   "soft"       : the engine's alpha as-is (every render before 2 Oct)
+    #   "hard"       : cut at edge_threshold, blur edge_aa_sigma -- the 29 Sep
+    #                  review finish; reads pixelated to him at 1:1
+    #   "hard_round" : blur edge_round_sigma, re-cut, blur edge_aa_sigma --
+    #                  rounds 1-2 px notches on the contour, then anti-aliases
+    #   "hard_v1"    : cut, erode+dilate edge_morph_px, blur edge_aa_sigma
+    # Judged on dance f24/f40 at 5x: hard_round is closest to v1; hard_v1
+    # eats thin parts (as v1 does).  Default stays "soft" until his call.
+    edge_finish: Literal["soft", "hard", "hard_round", "hard_v1"] = "soft"
+    edge_threshold: float = 0.5
+    edge_round_sigma: float = 2.0
+    edge_aa_sigma: float = 1.5
+    edge_morph_px: int = 8
 
 
 @dataclass
@@ -239,6 +257,13 @@ class SeedConfig:
     # (20 Sep: this flip was briefly reverted by an edit made on a stale
     # checkout; the default-pinning tests caught it before anything rendered.)
     maskrcnn_edge_pad: int = 64
+    # 24 Sep, the tryguys knee: two neighbours' Mask R-CNN masks leave the
+    # seam between them unclaimed.  Close the seed inside overlapping person
+    # boxes, but keep only pixels SAM 2.1 (prompted with the same boxes) also
+    # calls person -- the ungated close webbed background 50-73% of the time.
+    seam_sam: bool = True
+    seam_sam_close: int = 121
+    seam_sam_model: str = "sam2.1_b.pt"
     # 5.10b (17 Sep): the full pad fixed the bottom edge on the final alpha and
     # broke tryguys' right edge (GPU, run_2026-09-17_edgepad_gpu).  With this on,
     # the padded mask is only used inside an `maskrcnn_edge_pad`-wide band along
@@ -304,6 +329,38 @@ class MattingConfig:
     # memory gate still emits counters and still produces numbers, and every
     # one of those numbers is meaningless.
     strict_capabilities: bool = False
+    # How the kept people are handed to the engine.  "per_person" (default,
+    # 3.2a) gives each person their own obj_id.  "union" seeds everyone as ONE
+    # object.  23 Sep, tryguys: per-person objects back off the dark contact
+    # zones between seated people (the missing lap), and union cut the missing
+    # area 45-84% on three of four shots from identical seeds.  Off by default
+    # until it has passed ipman, where one object lost a fighter at f7 (3.2a).
+    # "both" runs per-person and union and takes the per-pixel max (2x time).
+    person_objects: str = "both"
+    # 25 Sep hybrid edge: take the silhouette from the tracker's own binary
+    # mask (crisp, like v1) and keep the matting alpha only where it is strong
+    # in a thin strip outside that line (hair, blur).  Default off.
+    hybrid_edge: bool = False
+    hybrid_band_px: int = 6
+    hybrid_strong: float = 0.6
+    # 25 Sep: fill background pockets on the bottom frame edge between two
+    # foreground runs (knees running off-frame), gated per pocket by SAM 2.1-b.
+    # Off by default until GPU-checked.  tryguys offline: missing -28%, extra +1%.
+    bottom_pocket: bool = False  # 26 Sep: off again, fills the stool gap v1 leaves open
+    bottom_pocket_gap: int = 300
+    bottom_pocket_hmax: int = 200
+    bottom_pocket_gate: float = 0.5
+    # 26 Sep: temporal median on the bottom band (rows below
+    # bottom_smooth_frac of the height), +-bottom_smooth_w frames, per shot.
+    # tryguys: bottom-band flips 63k -> 41k (v1 55k), missing/extra unchanged.
+    # 28 Sep: OFF.  On moving subjects the 7-frame median erases feet and
+    # shins that travel more than their own width in 3 frames: missing vs v1
+    # jumps 3-6x exactly at the band edge on dance (4% -> 11-30%), dance2,
+    # dance3, shakira, butter; no effect on static clips.  It only ever passed
+    # on tryguys, where nobody moves their feet.
+    bottom_smooth: bool = False
+    bottom_smooth_frac: float = 0.70
+    bottom_smooth_w: int = 3
 
 
 @dataclass
@@ -421,6 +478,37 @@ class ReIDConfig:
     # on a fixed-cast clip.
     mask_max_overlap: float = 0.50
     min_area_frac: float = 0.0015
+    # 1 Oct 2026, the dance wall.  Step 3 of `_recover_entrants` (the local
+    # repair passes) used to re-test its pending frames with BOX coverage,
+    # while step 1 only reached its verdict through mask confirmation.  That
+    # silences the repair in exactly the case it exists for: a cast member the
+    # matte is not holding has her box filled by the NEIGHBOURING object
+    # spreading across the gap, so box coverage reads her as covered.
+    # Measured on the 29 Sep dance render: 11 of 11 boxes flagged at
+    # 0.004..0.071 box coverage during the scan read 0.386..0.616 in the final
+    # alpha, all above `max_overlap` -- the defect satisfied its own repair
+    # test.  True re-tests on the confirmed silhouette instead.  Set False to
+    # reproduce every render before 1 Oct 2026.
+    # NOT YET VALIDATED ON A GPU RUN -- see HANDOFF section 5.
+    recheck_with_mask: bool = True
+    # 2 Oct 2026, the dance wall, second attempt.  Recovery (the reverse pass
+    # and the local passes) merges into the matte with np.maximum, so anything
+    # the recovery matte paints is permanent.  On dance the per-person tracker
+    # in the reverse pass spreads from one dancer onto her neighbour and paints
+    # the floor between them as body -- 8179 px of wall at f60, one person
+    # fewer than v1 on 20 of the first 72 frames, identical with person_objects
+    # per_person or both (run_2026-10-01_pp).  With this on, recovery may only
+    # ADD pixels that lie inside a `gate_dilate_px`-dilated union of the
+    # detector's per-person silhouettes at the nearest scan frames (both
+    # neighbours OR-ed, so motion between scans is covered).  The wall between
+    # two people lies inside nobody's silhouette and is dropped; a recovered
+    # limb lies inside its owner's and is kept.  Frames with no usable
+    # silhouette are left UNGATED (old behaviour), never blanked.
+    # Risk is the inverse of the 26 Sep pocket-fill: clipping thin limbs the
+    # detector under-segments.  Judge on blob count AND missing-vs-v1.
+    # OFF until its GPU A/B.
+    gate_recovery_to_silhouette: bool = False
+    gate_dilate_px: int = 40
     # When an identity is re-acquired, re-matte this many frames on each side
     # of the gap so the alpha stitches seamlessly.
     stitch_radius: int = 6
@@ -451,6 +539,18 @@ class RefineConfig:
     core_solidify_thresh: float = 0.25
     core_solidify_radius_frac: float = 0.00625   # x frame width; 12 px at 1920
     core_solidify_floor: float = 0.05            # gap guard: never solidify near-zero alpha
+    # Post-stabiliser (21 Sep): a second flow-guided temporal pass run LAST,
+    # after core_solidify, gated per pixel by stillness as well as warp trust.
+    # Answers Runbo's "it seems to flicker a lot" on tryguys: the visible
+    # flicker there is 0<->1 strobing in STATIC regions, where the shipped
+    # smoother's trust gate is open but its 0.35 authority is too weak to hold
+    # it.  Offline on the delivered alpha: tryguys large-swing blinks -66%,
+    # ipman/dance soft band >=99.1% kept.  ON by default since 21 Sep
+    # (Thriloush's call after the GPU check: tryguys large blinks -63%,
+    # interview -34%, ipman unchanged; one ~2-frame smudge on ipman f452-454).
+    # Set 0.0 to reproduce the 20 Sep delivery exactly.
+    post_stabilize: float = 0.8
+    post_stabilize_still_px: float = 6.0         # = MotionConfig.high_motion_px
 
 
 @dataclass

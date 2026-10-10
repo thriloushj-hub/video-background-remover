@@ -286,6 +286,13 @@ class Pipeline:
 
         seed = build_seed(frames[seed_at], self.seeder, kept,
                           held_props(props, kept), cfg.seed)
+        if getattr(cfg.seed, "seam_sam", False) and len(kept) > 1:
+            from .seed import seam_fill_sam
+            seed.mask, n_add = seam_fill_sam(
+                frames[seed_at], seed.mask, [d.box for d in kept],
+                cfg.seed.seam_sam_close, cfg.seed.seam_sam_model)
+            rep.notes.append(f"seam_sam: +{n_add} px")
+            print(f"[seam_sam] +{n_add} px at shot frame {seed_at}")
         seed_mask = refine.erode_dilate(
             seed.mask, cfg.matting.r_erode, cfg.matting.r_dilate)
         rep.notes.extend(seed.notes)
@@ -343,6 +350,38 @@ class Pipeline:
 
         # ---- refinement ---------------------------------------------------- #
         alphas, rep = self._refine_sequence(frames, alphas, rep)
+
+        m = getattr(self, "_shot_masks", None)
+        self._shot_masks = None
+        if getattr(cfg.matting, "hybrid_edge", False):
+            if m is not None and len(m) == len(alphas):
+                alphas = hybrid_edge(np.asarray(alphas, np.float32), m,
+                                     cfg.matting.hybrid_band_px,
+                                     cfg.matting.hybrid_strong)
+                rep.notes.append("hybrid edge applied")
+            else:
+                rep.notes.append("hybrid edge SKIPPED: no tracker masks for this shot")
+                print("[hybrid] skipped: masks", None if m is None else len(m), "alphas", len(alphas))
+
+        if getattr(cfg.matting, "bottom_pocket", False):
+            from .seed import pocket_fill
+            alphas = np.asarray(alphas, np.float32).copy()
+            tot = nf = 0
+            for i in range(len(alphas)):
+                alphas[i], n_px, n_f = pocket_fill(
+                    frames[i], alphas[i], cfg.matting.bottom_pocket_gap,
+                    cfg.matting.bottom_pocket_hmax, cfg.matting.bottom_pocket_gate,
+                    model=cfg.seed.seam_sam_model)
+                tot += n_px; nf += n_f
+            rep.notes.append(f"bottom pocket fill: {nf} pocket(s), {tot} px")
+            print(f"[pocket] {nf} pocket(s), +{tot} px over {len(alphas)} frame(s)")
+
+        if getattr(cfg.matting, "bottom_smooth", False) and len(alphas) > 2:
+            from .seed import bottom_temporal_median
+            a = np.asarray(alphas)
+            r0 = int(a.shape[1] * cfg.matting.bottom_smooth_frac)
+            alphas = bottom_temporal_median(a, r0, cfg.matting.bottom_smooth_w)
+            rep.notes.append(f"bottom temporal median from row {r0}")
 
         assert len(alphas) == len(frames)
         return alphas, rep
@@ -449,6 +488,11 @@ class Pipeline:
         # --- 1. scan for uncovered subjects ------------------------------- #
         pending: Dict[int, List[int]] = {}      # frame -> box indices
         boxes_at: Dict[int, List] = {}
+        # 1 Oct 2026: the confirmed silhouettes for each pending frame, kept so
+        # step 3 can re-test with the SAME evidence step 1 acted on.  See the
+        # note on the re-check below.
+        masks_at: Dict[int, List] = {}
+        sil_at: Dict[int, np.ndarray] = {}      # frame -> union silhouette
         for i in range(0, len(frames), max(1, cfg.reid.scan_every)):
             people, _ = self.detector.detect(frames[i])
             # The scan inherits the seed gate ON PURPOSE.  This is 3.3g, and
@@ -484,8 +528,22 @@ class Pipeline:
                 cfg.detect.conf_abs_min)
             if not kept:
                 continue
+            if getattr(cfg.reid, "gate_recovery_to_silhouette", False):
+                # 2 Oct: silhouettes of EVERY kept person at this scan frame,
+                # for gating what recovery may add later.  A failure here just
+                # leaves this frame ungated.
+                try:
+                    sm = list(self.seeder.masks_from_boxes(
+                        frames[i], [d.box for d in kept]))
+                    sm = [np.asarray(m) > 0 for m in sm if m is not None]
+                    if sm:
+                        sil_at[i] = np.logical_or.reduce(sm)
+                except Exception as e:                        # noqa: BLE001
+                    rep.notes.append(f"f{i}: silhouette gate unavailable "
+                                     f"({type(e).__name__})")
             unc = uncovered_boxes(alphas[i], [d.box for d in kept],
                                   cfg.reid.max_overlap, cfg.reid.min_area_frac)
+            conf_masks = [None] * len(unc)
             if unc:
                 # Second stage.  The box test is a pose-sensitive pre-filter
                 # (3.3a: it produced 19 phantom events on this set), so confirm
@@ -516,10 +574,14 @@ class Pipeline:
                               f"confirmation (box cov "
                               f"{box_coverage(alphas[i], kept[j].box):.3f}, "
                               f"{why})", flush=True)
+                    conf_masks = [masks[pos] for pos in sorted(keep_pos)]
                     unc = [unc[pos] for pos in sorted(keep_pos)]
+                else:
+                    conf_masks = [None] * len(unc)
             if unc:
                 pending[i] = unc
                 boxes_at[i] = kept
+                masks_at[i] = conf_masks
                 # Diagnostic (3.3a).  Print the number that made the decision:
                 # a box value just under max_overlap on a spread pose was a
                 # false positive, a value near 0 is a person the matte
@@ -543,6 +605,7 @@ class Pipeline:
         if any(k > len(frames) * 0.6 for k in pending):
             rev = self._directional_pass(frames, last, backward=True)
             if rev is not None:
+                rev = self._gate_recovery(rev, 0, sil_at, rep)
                 alphas = np.maximum(alphas, rev)
                 rep.reentries += 1
                 print(f"[reentry] REVERSE pass fired, anchored at f{last}",
@@ -550,13 +613,36 @@ class Pipeline:
 
         # --- 3. local bidirectional passes for the rest -------------------- #
         for i in sorted(pending):
-            if uncovered_boxes(alphas[i], [boxes_at[i][j].box for j in pending[i]],
-                               cfg.reid.max_overlap, cfg.reid.min_area_frac):
+            # 1 Oct 2026 -- THE DANCE WALL.  This re-check used to be
+            # `uncovered_boxes`, i.e. BOX coverage, even though step 1 only
+            # reached a verdict via mask confirmation.  That is unsound in
+            # exactly the case this pass exists for: when a cast member is not
+            # being held, the neighbouring object's matte spreads across the
+            # gap and fills her box with background, so the box test reads her
+            # as covered and the repair never fires.  Measured on the 29 Sep
+            # dance render: 11 of 11 boxes flagged at 0.004..0.071 box coverage
+            # during the scan read 0.386..0.616 in the final alpha -- every one
+            # above the 0.35 threshold.  The defect satisfied its own repair
+            # test.  Re-test on the confirmed silhouette instead, which is what
+            # step 1 decided on; fall back to the box test only when no mask
+            # was available.  `reid.recheck_with_mask = False` restores the old
+            # behaviour for A/B.
+            mk = masks_at.get(i) or []
+            if (getattr(cfg.reid, "recheck_with_mask", True)
+                    and any(m is not None for m in mk)):
+                still = confirm_uncovered(alphas[i], mk,
+                                          cfg.reid.mask_max_overlap)
+            else:
+                still = uncovered_boxes(
+                    alphas[i], [boxes_at[i][j].box for j in pending[i]],
+                    cfg.reid.max_overlap, cfg.reid.min_area_frac)
+            if still:
                 loc = self._local_pass(
                     frames, i, cfg.reid.stitch_radius,
                     must_boxes=[boxes_at[i][j].box for j in pending[i]])
                 if loc is not None:
                     lo, hi, arr = loc
+                    arr = self._gate_recovery(arr, lo, sil_at, rep)
                     alphas[lo:hi] = np.maximum(alphas[lo:hi], arr)
                     rep.reentries += 1
                     print(f"[reentry] LOCAL pass fired at f{i} "
@@ -578,11 +664,109 @@ class Pipeline:
         Falls back to the fused mask when there is nothing to split, which is
         every single-subject clip and is exactly the old behaviour.
         """
+        mode = getattr(self.cfg.matting, "person_objects", "per_person")
+        hyb = getattr(self.cfg.matting, "hybrid_edge", False)
+        self.engine.keep_masks = hyb
+        if hyb:
+            self._hyb_masks_acc = None
+            out, n = self._matte_by_person_inner(frames, seed, seed_mask, n_warmup, mode)
+            m = getattr(self.engine, "last_masks", None)
+            if self._hyb_masks_acc is not None and m is not None:
+                m = np.maximum(m, self._hyb_masks_acc)
+            self._hyb_masks_acc = None
+            # applied AFTER refine in _run_shot, so the guided filter and the
+            # stabilisers cannot re-soften the crisp line
+            self._shot_masks = m
+            return out, n
+        return self._matte_by_person_inner(frames, seed, seed_mask, n_warmup, mode)
+
+    def _matte_by_person_inner(self, frames, seed, seed_mask, n_warmup, mode):
+        import inspect
+        if "seed_masks" not in inspect.signature(self.engine.matte).parameters:
+            # 26 Sep: engines with a single-mask API (MatAnyone2, RVM) get the
+            # fused seed, whatever person_objects says.
+            return self.engine.matte(frames, seed_mask, n_warmup=n_warmup), 1
+        if mode == "union":
+            # every kept person as ONE explicit object -- see MattingConfig
+            return self.engine.matte(frames, seed_mask=None,
+                                     seed_masks=[seed_mask],
+                                     n_warmup=n_warmup), 1
+        if mode == "both" and not split_by_person(seed_mask, seed.per_person):
+            # 25 Sep: one person (or no split) -- both passes would matte the
+            # same single object twice.  Take the per-person path unchanged.
+            mode = "per_person"
+        if mode == "both":
+            # per-person AND one-object passes, per-pixel max.  23 Sep:
+            # per-person drops the seam between touching people (tryguys lap,
+            # interview f20 hand); one object drops thin parts next to another
+            # person (interview f258-344 fingers).  Each holds what the other
+            # loses; the max can never hold less than either.  2x engine time.
+            union = np.asarray(self.engine.matte(frames, seed_mask=None,
+                                                 seed_masks=[seed_mask],
+                                                 n_warmup=n_warmup))
+            self._hyb_masks_acc = getattr(self.engine, "last_masks", None)
+            self.engine.reset()
+            objs = split_by_person(seed_mask, seed.per_person)
+            if not objs:
+                return union, 1
+            per = np.asarray(self.engine.matte(frames, seed_mask=None,
+                                               seed_masks=objs,
+                                               n_warmup=n_warmup))
+            return np.maximum(per, union), len(objs)
         objs = split_by_person(seed_mask, seed.per_person)
         if objs:
             return self.engine.matte(frames, seed_mask=None, seed_masks=objs,
                                      n_warmup=n_warmup), len(objs)
         return self.engine.matte(frames, seed_mask, n_warmup=n_warmup), 1
+
+    def _gate_recovery(self, add: np.ndarray, start: int,
+                       sil_at: Dict[int, np.ndarray], rep) -> np.ndarray:
+        """Restrict what a recovery pass may ADD to the matte.
+
+        2 Oct 2026.  ``add`` is a recovery matte for frames
+        ``start .. start+len(add)``.  Each frame is multiplied by a gate: the
+        union of the detector silhouettes at the nearest scan frame on each
+        side (OR-ed, so a limb that moved between scans is still inside),
+        dilated by ``reid.gate_dilate_px``.  Frames with no silhouette on
+        either side are returned untouched -- the gate can only ever leave the
+        old behaviour in place, never blank a frame.  See ReIDConfig.
+        """
+        cfg = self.cfg.reid
+        if not getattr(cfg, "gate_recovery_to_silhouette", False) or not sil_at:
+            return add
+        keys = sorted(sil_at)
+        k = int(getattr(cfg, "gate_dilate_px", 40))
+        kern = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * k + 1, 2 * k + 1)) \
+            if k > 0 else None
+        out = add.copy()
+        cache: Dict[Tuple[int, int], np.ndarray] = {}
+        before_px = after_px = 0
+        for j in range(len(out)):
+            f = start + j
+            lo = max((x for x in keys if x <= f), default=None)
+            hi = min((x for x in keys if x >= f), default=None)
+            if lo is None and hi is None:
+                continue
+            key = (lo if lo is not None else -1, hi if hi is not None else -1)
+            g = cache.get(key)
+            if g is None:
+                g = np.zeros(out[j].shape[:2], np.uint8)
+                for x in (lo, hi):
+                    if x is not None:
+                        g |= sil_at[x].astype(np.uint8)
+                if kern is not None:
+                    g = cv2.dilate(g, kern)
+                cache[key] = g
+            before_px += int((out[j] > 0.5).sum())
+            out[j] = out[j] * g
+            after_px += int((out[j] > 0.5).sum())
+        if before_px:
+            msg = (f"[recovery-gate] kept {after_px}/{before_px} px "
+                   f"({100.0 * after_px / before_px:.1f}%) of recovery over "
+                   f"{len(out)} frames, dilate={k}")
+            print(msg, flush=True)
+            rep.notes.append(msg)
+        return out
 
     def _directional_pass(self, frames, anchor: int, backward: bool
                           ) -> Optional[np.ndarray]:
@@ -676,12 +860,20 @@ class Pipeline:
         cfg = self.cfg
         if not (cfg.motion.enabled or cfg.refine.band_refine or
                 cfg.refine.temporal_filter or cfg.refine.guided_filter or
-                cfg.refine.core_solidify):
+                cfg.refine.core_solidify or cfg.refine.post_stabilize > 0):
             return alphas, rep
 
         stab = refine.TemporalStabilizer(
             cfg.refine.temporal_alpha, cfg.motion.warp_consistency_thresh,
             self._flow) if cfg.refine.temporal_filter else None
+        # Runs last, so it smooths what is actually written out -- including
+        # anything core_solidify snapped -- and nothing downstream can re-flip
+        # it.  Fresh per shot, like `stab`: this function is called per shot.
+        post = refine.TemporalStabilizer(
+            cfg.refine.post_stabilize, cfg.motion.warp_consistency_thresh,
+            self._flow, still_px=cfg.refine.post_stabilize_still_px,
+            still_sigma=cfg.motion.flow_smooth_sigma
+        ) if cfg.refine.post_stabilize > 0 else None
 
         head = None
         if cfg.refine.band_refine and self.engine.has("per_frame_head"):
@@ -726,6 +918,9 @@ class Pipeline:
                     cfg.refine.core_solidify_radius_frac,
                     cfg.refine.core_solidify_floor)
 
+            if post is not None:
+                a = post.step(f, a)
+
             out[i] = a
             prev = f
 
@@ -756,6 +951,10 @@ class Pipeline:
 
         for i, f in enumerate(frames):
             a = alphas[i]
+            if getattr(cfg.io, "edge_finish", "soft") != "soft":
+                a = refine.edge_finish(a, cfg.io.edge_finish, cfg.io.edge_threshold,
+                                       cfg.io.edge_round_sigma, cfg.io.edge_aa_sigma,
+                                       cfg.io.edge_morph_px)
             F = (decontaminate.decontaminate(
                     f, a, cfg.decontam.regularization,
                     cfg.decontam.n_small_iterations,
@@ -805,3 +1004,28 @@ def run_batch(cfg: Config, require_commercial: bool = False,
         if on_clip:
             on_clip(r)
     return reports
+
+
+
+def hybrid_edge(alpha, masks, band_px=6, strong=0.6):
+    """Crisp silhouette from the tracker mask + strong alpha just outside it.
+
+    Inside the mask: 1 (anti-aliased by a 0.8 px blur of the mask edge).
+    In a ``band_px`` strip outside it: the matting alpha remapped so only
+    values above ``strong`` survive (hair, motion blur; not the faint rim).
+    Beyond the strip: the matting alpha only where it is near-solid (> 0.9),
+    so a part the mask missed but the matte holds is not thrown away.
+    """
+    import cv2
+    out = np.empty_like(alpha)
+    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * band_px + 1,) * 2)
+    for i in range(len(alpha)):
+        m = (np.asarray(masks[i]) > 0).astype(np.float32)
+        hard = cv2.GaussianBlur(m, (0, 0), 0.8)
+        near = cv2.dilate(m, k) > 0
+        a = alpha[i]
+        soft = np.clip((a - strong) / max(1e-6, 1 - strong), 0, 1)
+        o = np.maximum(hard, np.where(near & (m == 0), soft, 0))
+        o = np.maximum(o, np.where(~near & (a > 0.9), a, 0))
+        out[i] = o
+    return out

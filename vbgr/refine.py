@@ -68,10 +68,23 @@ class TemporalStabilizer:
 
     def __init__(self, weight: float = 0.35,
                  consistency_thresh: float = 18.0,
-                 flow: Optional[_motion.FlowEstimator] = None):
+                 flow: Optional[_motion.FlowEstimator] = None,
+                 still_px: Optional[float] = None,
+                 still_sigma: float = 9.0):
+        """`still_px` (21 Sep): if set, the blend weight is additionally scaled
+        per pixel by ``clip(1 - flow_mag / still_px, 0, 1)``, so the filter
+        acts only where the picture is not moving.  Measured offline on the
+        delivered alphas (bench/sweep_flicker_fix.py, arm `still`): the
+        photometric `trust` gate alone still leaks smear into fast motion at
+        partial trust -- at weight 0.6 it cost ipman 3.6% and dance 4.3% of
+        their soft band for no flicker gain -- while the stillness gate cut
+        that cost 5-7x and kept the win on the static clip Runbo flagged.
+        None keeps the original behaviour exactly."""
         self.weight = weight
         self.consistency_thresh = consistency_thresh
         self.flow = flow or _motion.FlowEstimator()
+        self.still_px = still_px
+        self.still_sigma = still_sigma
         self._prev_alpha: Optional[np.ndarray] = None
         self._prev_bgr: Optional[np.ndarray] = None
 
@@ -93,7 +106,11 @@ class TemporalStabilizer:
             self._prev_alpha, self._prev_bgr, frame_bgr, flow,
             self.consistency_thresh)
 
-        w = (self.weight * trust).astype(np.float32)
+        w = self.weight * trust
+        if self.still_px is not None:
+            mag = self.flow.magnitude(flow, self.still_sigma)
+            w = w * np.clip(1.0 - mag / max(self.still_px, 1e-6), 0.0, 1.0)
+        w = w.astype(np.float32)
         out = np.clip(a * (1.0 - w) + warped * w, 0.0, 1.0)
 
         self._prev_alpha, self._prev_bgr = out, frame_bgr.copy()
@@ -235,3 +252,33 @@ def core_solidify(alpha: np.ndarray, thresh: float = 0.25,
     out = a.copy()
     out[core] = 1.0
     return out
+
+
+def edge_finish(alpha: np.ndarray, mode: str = "soft", thr: float = 0.5,
+                round_sigma: float = 2.0, aa_sigma: float = 1.5,
+                morph_px: int = 8) -> np.ndarray:
+    """Output edge finish -- see IOConfig.edge_finish (2 Oct 2026).
+
+    Works on a float alpha in [0, 1] and returns the same.  "soft" is the
+    identity.  All hard modes cut at `thr` first, so nothing here can add or
+    remove a region; they only restyle the boundary within a few pixels.
+    """
+    if mode == "soft":
+        return alpha
+    a = np.clip(alpha.astype(np.float32), 0.0, 1.0)
+    hard = (a > thr).astype(np.float32)
+    if mode == "hard":
+        pass
+    elif mode == "hard_round":
+        if round_sigma > 0:
+            hard = (cv2.GaussianBlur(hard, (0, 0), round_sigma) > 0.5).astype(np.float32)
+    elif mode == "hard_v1":
+        r = int(morph_px)
+        if r > 0:
+            k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1))
+            hard = cv2.dilate(cv2.erode(hard, k), k)
+    else:
+        raise ValueError(f"unknown edge_finish {mode!r}")
+    if aa_sigma > 0:
+        hard = cv2.GaussianBlur(hard, (0, 0), aa_sigma)
+    return np.clip(hard, 0.0, 1.0)

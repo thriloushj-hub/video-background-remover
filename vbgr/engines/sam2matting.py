@@ -329,6 +329,10 @@ class SAM2MattingEngine(MattingEngine):
         d = self._materialise(frames)
         h, w = frames[0].shape[:2]
         out = np.zeros((len(frames), h, w), np.float32)
+        # 25 Sep: the tracker's own binary mask (logits > 0), for the hybrid
+        # edge.  Kept only when asked; ``self.last_masks`` after the call.
+        masks = (np.zeros((len(frames), h, w), np.uint8)
+                 if getattr(self, "keep_masks", False) else None)
 
         # object_areas[t][k] = fraction of frame covered by seeded subject k at
         # frame t.  Filled by _alpha_union.  NaN marks a frame the predictor
@@ -357,6 +361,8 @@ class SAM2MattingEngine(MattingEngine):
                 for idx, _objs, _lg, alpha, *_ in self._predictor.propagate_in_video(state):
                     a = self._alpha_union(alpha, n_obj, h, w)
                     out[idx] = a
+                    if masks is not None:
+                        masks[idx] = self._mask_union(_lg, h, w)
                     row = self._obj_area_frame
                     if len(row) == len(objs):
                         obj_areas[int(idx)] = row
@@ -382,8 +388,25 @@ class SAM2MattingEngine(MattingEngine):
             self._cleanup()
 
         self.object_areas = obj_areas
+        self.last_masks = masks
         assert len(out) == len(frames)
         return out
+
+    def _mask_union(self, logits, h: int, w: int) -> np.ndarray:
+        """Union of the per-object mask logits as a 0/1 uint8 HxW mask."""
+        import cv2
+        t = self._torch
+        x = logits
+        if isinstance(x, (tuple, list)):
+            x = [v.detach().float().cpu().numpy() if isinstance(v, t.Tensor) else np.asarray(v) for v in x]
+            x = np.stack([np.asarray(v, np.float32).reshape(-1, *np.asarray(v).shape[-2:]).max(0) for v in x])
+        elif isinstance(x, t.Tensor):
+            x = x.detach().float().cpu().numpy()
+        x = np.asarray(x, np.float32)
+        x = x.reshape(-1, *x.shape[-2:]).max(0)
+        if x.shape != (h, w):
+            x = cv2.resize(x, (w, h), interpolation=cv2.INTER_LINEAR)
+        return (x > 0).astype(np.uint8)
 
     def matte_frame(self, frame_bgr: np.ndarray,
                     trimap: np.ndarray) -> Optional[np.ndarray]:

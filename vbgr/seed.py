@@ -1072,3 +1072,149 @@ def split_by_person(fused: np.ndarray,
     # A partition that collapsed to one object is not a split; say so by
     # returning nothing rather than handing back a relabelled union.
     return out if len(out) >= 2 else []
+
+
+_SAM_CACHE = {}
+
+
+def seam_candidates(mask, boxes, k):
+    """Pixels a k-px close adds inside the overlap of any two person boxes."""
+    m = np.asarray(mask) > 0
+    H, W = m.shape
+    ov = np.zeros((H, W), bool)
+    B = [tuple(map(float, b)) for b in boxes]
+    for i in range(len(B)):
+        for j in range(i + 1, len(B)):
+            a, b = B[i], B[j]
+            x0, y0 = int(max(a[0], b[0])), int(max(a[1], b[1]))
+            x1, y1 = int(min(a[2], b[2])), int(min(a[3], b[3]))
+            if x1 > x0 and y1 > y0:
+                ov[y0:y1, x0:x1] = True
+    if not ov.any():
+        return ov
+    cl = cv2.morphologyEx(m.astype(np.uint8), cv2.MORPH_CLOSE,
+                          cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))) > 0
+    return cl & ov & ~m
+
+
+def seam_fill_sam(frame_bgr, mask, boxes, k=121, model="sam2.1_b.pt",
+                  person_masks=None):
+    """Seed mask plus the seam candidates SAM also calls person.
+
+    ``person_masks`` lets tests inject SAM's answer; otherwise ultralytics SAM
+    is run with the person boxes as prompts.  Returns (new_mask, n_added).
+    """
+    m = np.asarray(mask) > 0
+    cand = seam_candidates(m, boxes, k)
+    if not cand.any():
+        return np.asarray(mask), 0
+    if person_masks is None:
+        if model not in _SAM_CACHE:
+            from ultralytics import SAM
+            _SAM_CACHE[model] = SAM(model)
+        r = _SAM_CACHE[model](frame_bgr, bboxes=[list(map(float, b)) for b in boxes],
+                              verbose=False)[0]
+        person_masks = r.masks.data.cpu().numpy() > 0.5
+    acc = cand & np.any(np.asarray(person_masks), 0)
+    out = np.asarray(mask).copy()
+    out[acc] = 255 if out.max() > 1 else 1
+    return out, int(acc.sum())
+
+
+def bottom_pockets(mask, gap=300, hmax=200):
+    """Background pockets that open onto the bottom frame edge between two
+    foreground runs (e.g. between two people's knees running off-frame).
+
+    A pocket is a background gap on the bottom row no wider than ``gap``, with
+    foreground on both sides, flooded upward within ``hmax`` rows; it is kept
+    only if it closes before the top of that window.  Returns a list of bool
+    masks (full frame), one per pocket.
+    """
+    import cv2
+    m = np.asarray(mask) > 0
+    H, W = m.shape
+    hmax = min(hmax, H)
+    row = m[H - 1]
+    edges = np.flatnonzero(np.diff(row.astype(np.int8)))
+    xs = np.r_[0, edges + 1, W]
+    runs = [(int(xs[k]), int(xs[k + 1]), bool(row[xs[k]])) for k in range(len(xs) - 1)]
+    out = []
+    for k in range(1, len(runs) - 1):
+        x0, x1, fg = runs[k]
+        if fg or x1 - x0 > gap:
+            continue
+        sub = (~m[H - hmax:, x0:x1]).astype(np.uint8)
+        ff = np.zeros((hmax + 2, x1 - x0 + 2), np.uint8)
+        cv2.floodFill(sub, ff, (0, hmax - 1), 2)
+        pk = sub == 2
+        if pk[0].any():
+            continue
+        full = np.zeros_like(m)
+        full[H - hmax:, x0:x1] = pk
+        out.append(full)
+    return out
+
+
+def pocket_fill(frame_bgr, alpha, gap=300, hmax=200, gate=0.5, min_px=300,
+                model="sam2.1_b.pt", segment=None):
+    """Fill bottom-edge pockets that SAM says belong to a person already in
+    the matte.  For each pocket, SAM is prompted with one positive point at
+    the pocket's deepest interior pixel; the pocket is filled only if more
+    than ``gate`` of SAM's mask lies inside the current matte (a knee or leg
+    continuing into the person) -- a wall or floor patch comes back mostly
+    outside and is rejected.  ``segment(frame, (x, y)) -> bool HxW`` lets tests
+    inject SAM.  Returns (new_alpha, n_px_added, n_pockets_filled).
+    """
+    import cv2
+    a = np.asarray(alpha, np.float32)
+    m = a > 0.5
+    H, W = m.shape
+    if segment is None:
+        def segment(fr, pt):
+            if model not in _SAM_CACHE:
+                from ultralytics import SAM
+                _SAM_CACHE[model] = SAM(model)
+            r = _SAM_CACHE[model](fr, points=[list(pt)], labels=[1], verbose=False)[0]
+            if r.masks is None or len(r.masks.data) == 0:
+                return None
+            mm = r.masks.data[0].cpu().numpy().astype(np.uint8)
+            if mm.shape != (H, W):
+                mm = cv2.resize(mm, (W, H), interpolation=cv2.INTER_NEAREST)
+            return mm > 0
+    out = a.copy()
+    added = filled = 0
+    fr = np.asarray(frame_bgr)[:H, :W]
+    for pk in bottom_pockets(m, gap, hmax):
+        if pk.sum() < min_px:
+            continue
+        dt = cv2.distanceTransform(pk.astype(np.uint8), cv2.DIST_L2, 3)
+        cy, cx = np.unravel_index(int(dt.argmax()), dt.shape)
+        mm = segment(fr, (int(cx), int(cy)))
+        if mm is None or mm.sum() == 0:
+            continue
+        if (mm & m).sum() / mm.sum() > gate:
+            # 26 Sep: fill a 2 px collar too, so no 1-2 px seam of
+            # semi-transparent edge is left between pocket and matte
+            # (the green "sliver" on the tryguys knee).
+            pk = cv2.dilate(pk.astype(np.uint8), np.ones((5, 5), np.uint8)) > 0
+            out[pk] = 1.0
+            added += int(pk.sum())
+            filled += 1
+    return out, added, filled
+
+
+def bottom_temporal_median(alphas, rows_from, w=3):
+    """Per-pixel temporal median over +-w frames, only for rows >= rows_from.
+
+    The bottom band (laps, knees, stool) is near-static, and per-frame
+    decisions there (pocket fill, seam edges) toggle frame to frame, which
+    reads as flicker.  The median removes 1-3 frame toggles without moving
+    anything that stays put.  Call per shot so it never mixes across a cut.
+    """
+    a = np.asarray(alphas)
+    out = a.copy()
+    n = len(a)
+    for i in range(n):
+        lo, hi = max(0, i - w), min(n, i + w + 1)
+        out[i, rows_from:] = np.median(a[lo:hi, rows_from:], axis=0)
+    return out
