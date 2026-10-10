@@ -550,6 +550,14 @@ class RefineConfig:
     # interview -34%, ipman unchanged; one ~2-frame smudge on ipman f452-454).
     # Set 0.0 to reproduce the 20 Sep delivery exactly.
     post_stabilize: float = 0.8
+    # 9 Oct: fill pieces of a STILL subject the engine drops for 1-2 frames,
+    # and back-fill a shot's first frames (refine.fill_dropouts).  Add-only,
+    # both-neighbours-agree, still-gated, blob-gated.  Replaces the 4 Oct hand
+    # fixes on microsoft and tryguys with one rule for every clip.
+    dropout_fill: bool = True
+    dropout_min_blob: int = 1000
+    dropout_still_px: float = 20.0
+    dropout_warmup_frames: int = 4
     post_stabilize_still_px: float = 6.0         # = MotionConfig.high_motion_px
 
 

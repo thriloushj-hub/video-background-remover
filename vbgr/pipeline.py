@@ -860,7 +860,8 @@ class Pipeline:
         cfg = self.cfg
         if not (cfg.motion.enabled or cfg.refine.band_refine or
                 cfg.refine.temporal_filter or cfg.refine.guided_filter or
-                cfg.refine.core_solidify or cfg.refine.post_stabilize > 0):
+                cfg.refine.core_solidify or cfg.refine.post_stabilize > 0 or
+                cfg.refine.dropout_fill):
             return alphas, rep
 
         stab = refine.TemporalStabilizer(
@@ -925,6 +926,17 @@ class Pipeline:
             prev = f
 
         assert len(out) == len(alphas)
+        if cfg.refine.dropout_fill:
+            filled, nch, npx = refine.fill_dropouts(
+                frames, [out[i] for i in range(len(frames))], self._flow,
+                still_px=cfg.refine.dropout_still_px,
+                still_sigma=cfg.motion.flow_smooth_sigma,
+                min_blob=cfg.refine.dropout_min_blob,
+                warmup=cfg.refine.dropout_warmup_frames)
+            for i, a in enumerate(filled):
+                out[i] = a
+            if nch:
+                print(f"[dropout_fill] {nch} frame(s), {npx} px added")
         return out, rep
 
     # ------------------------------------------------------------------ #

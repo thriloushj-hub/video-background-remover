@@ -140,6 +140,10 @@ refine:
   core_solidify_radius_frac: 0.00625
   core_solidify_floor: 0.05
   post_stabilize: 0.8
+  dropout_fill: true
+  dropout_min_blob: 1000
+  dropout_still_px: 20.0
+  dropout_warmup_frames: 4
   post_stabilize_still_px: 6.0
 decontam:
   enabled: true
